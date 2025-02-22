@@ -1,10 +1,10 @@
-name: CMake Build and Test
+name: CMake with MSVC and vcpkg
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 env:
   BUILD_TYPE: Release
@@ -15,26 +15,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
+    - name: Setup vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg
+        .\bootstrap-vcpkg.bat
+
     - name: Install Dependencies
       run: |
-        mkdir C:\module
-        git clone https://github.com/arrayfire/arrayfire.git
-        cd arrayfire && mkdir build
-        cd build && cmake ..
-        cmake --build ./ --config Release -j4
-        cmake --install ./ --prefix C:/module
-      shell: cmd
-    
+        vcpkg\vcpkg install arrayfire gtest --triplet x64-windows
+
     - name: Configure CMake
-      run: >
-        cmake -B ${{github.workspace}}/build
-        -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-        -DArrayFire_DIR="C:/module"
-    
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
+
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-    
+
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+      run: ctest -C ${{env.BUILD_TYPE}}
