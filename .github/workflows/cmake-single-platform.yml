@@ -8,7 +8,7 @@ on:
 
 env:
   BUILD_TYPE: Release
-  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+  VCPKG_ROOT: ${{ github.workspace }}\vcpkg
 
 jobs:
   build:
@@ -18,25 +18,30 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Setup vcpkg
+      shell: cmd
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg
-        .\bootstrap-vcpkg.bat
+        bootstrap-vcpkg.bat
 
     - name: Install Dependencies
+      shell: cmd
       run: |
         vcpkg\vcpkg install arrayfire gtest --triplet x64-windows
-        echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg/installed/x64-windows" >> $GITHUB_ENV
+        echo ArrayFire_DIR=${{ github.workspace }}\vcpkg\installed\x64-windows\share\arrayfire >> %GITHUB_ENV%
 
     - name: Configure CMake
+      shell: cmd
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ^
-          -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake ^
-          -DCMAKE_PREFIX_PATH=${{ env.CMAKE_PREFIX_PATH }}
+        cmake -B %GITHUB_WORKSPACE%\build -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
+          -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake ^
+          -DArrayFire_DIR=%ArrayFire_DIR%
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      shell: cmd
+      run: cmake --build %GITHUB_WORKSPACE%\build --config %BUILD_TYPE%
 
     - name: Test
-      working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}}
+      shell: cmd
+      working-directory: ${{ github.workspace }}\build
+      run: ctest -C %BUILD_TYPE%
