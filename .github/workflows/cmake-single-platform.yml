@@ -25,7 +25,8 @@ jobs:
       with:
         path: |
           ${{ github.workspace }}/vcpkg
-          C:/Users/runneradmin/AppData/Local/vcpkg/archives
+          ${{ github.workspace }}/vcpkg_installed
+          C:/Users/runneradmin/AppData/Local/vcpkg
         key: vcpkg-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
         restore-keys: |
           vcpkg-${{ runner.os }}-
@@ -46,8 +47,13 @@ jobs:
     # Debug vcpkg cache
     - name: Debug vcpkg cache
       shell: cmd
+      continue-on-error: true
       run: |
-        dir C:\Users\runneradmin\AppData\Local\vcpkg\archives
+        if exist C:\Users\runneradmin\AppData\Local\vcpkg\archives (
+          dir C:\Users\runneradmin\AppData\Local\vcpkg\archives
+        ) else (
+          echo "Cache directory does not exist."
+        )
 
     # ----------------------------------------------
     # Cache ArrayFire Build
