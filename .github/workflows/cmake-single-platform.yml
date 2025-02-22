@@ -7,7 +7,7 @@ on:
 
 env:
   BUILD_TYPE: Release
-  VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
 
 jobs:
   build:
@@ -15,18 +15,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Setup and build
+
+    - name: Install vcpkg and dependencies
       shell: cmd
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg && bootstrap-vcpkg.bat
         cd ..
-        set PATH=${{ github.workspace }}\vcpkg;%PATH%
-        set VCPKG_ROOT=${{ github.workspace }}\vcpkg
-        vcpkg integrate install
-        vcpkg install --triplet x64-windows freeimage openblas fftw3
+        set PATH=%VCPKG_ROOT%;%PATH%
+        vcpkg install freeimage openblas fftw3 --triplet x64-windows
+
+    - name: Build ArrayFire
+      shell: cmd
+      run: |
         git clone https://github.com/arrayfire/arrayfire.git
         cd arrayfire && mkdir build
-        cd build && cmake -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems" ..
-        cmake --build ./ -j4 --config Release
-        cmake --install ./
+        cd build
+        cmake -G "Visual Studio 17 2022" -A x64 ^
+          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ..
+        cmake --build . --config Release --parallel 4
+        cmake --install .
