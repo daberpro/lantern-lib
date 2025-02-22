@@ -27,7 +27,7 @@ jobs:
     - name: Install Dependencies
       shell: cmd
       run: |
-        vcpkg\vcpkg install arrayfire gtest --triplet x64-windows
+        vcpkg\vcpkg install arrayfire[cpu] gtest --triplet x64-windows
         echo ArrayFire_DIR=${{ github.workspace }}\vcpkg\installed\x64-windows\share\arrayfire >> %GITHUB_ENV%
 
     - name: Configure CMake
