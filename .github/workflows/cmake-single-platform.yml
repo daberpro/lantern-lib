@@ -8,6 +8,7 @@ on:
 
 env:
   BUILD_TYPE: Release
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
 
 jobs:
   build:
@@ -25,10 +26,13 @@ jobs:
     - name: Install Dependencies
       run: |
         vcpkg\vcpkg install arrayfire gtest --triplet x64-windows
+        echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/vcpkg/installed/x64-windows" >> $GITHUB_ENV
 
     - name: Configure CMake
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ^
+          -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake ^
+          -DCMAKE_PREFIX_PATH=${{ env.CMAKE_PREFIX_PATH }}
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
