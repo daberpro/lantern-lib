@@ -12,3 +12,6 @@
 
 ## About Latern
 The lantern library is a library for developing deep learning written using the c++ programming language, built on the arrayfire library as a library for processing tensors.
+
+> **⚠️ Danger:** This is a critical warning message! \
+> latern-lib still in progress, and this lib still poor feature
