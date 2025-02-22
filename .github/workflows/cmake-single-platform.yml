@@ -1,5 +1,4 @@
-name: CMake with MSVC and vcpkg
-
+name: CMake with MSVC
 on:
   push:
     branches: [ "main" ]
@@ -16,32 +15,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Setup vcpkg
+    - name: Setup and build
       shell: cmd
       run: |
         git clone https://github.com/microsoft/vcpkg.git
-        cd vcpkg
-        bootstrap-vcpkg.bat
-
-    - name: Install Dependencies
-      shell: cmd
-      run: |
-        vcpkg\vcpkg install arrayfire[cpu] gtest --triplet x64-windows
-        echo ArrayFire_DIR=${{ github.workspace }}\vcpkg\installed\x64-windows\share\arrayfire >> %GITHUB_ENV%
-
-    - name: Configure CMake
-      shell: cmd
-      run: |
-        cmake -B %GITHUB_WORKSPACE%\build -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-          -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake ^
-          -DArrayFire_DIR=%ArrayFire_DIR%
-
-    - name: Build
-      shell: cmd
-      run: cmake --build %GITHUB_WORKSPACE%\build --config %BUILD_TYPE%
-
-    - name: Test
-      shell: cmd
-      working-directory: ${{ github.workspace }}\build
-      run: ctest -C %BUILD_TYPE%
+        cd vcpkg && bootstrap-vcpkg.bat
+        cd ..
+        set PATH=${{ github.workspace }}\vcpkg;%PATH%
+        set VCPKG_ROOT=${{ github.workspace }}\vcpkg
+        vcpkg integrate install
+        vcpkg install --triplet x64-windows freeimage openblas fftw3
+        git clone https://github.com/arrayfire/arrayfire.git
+        cd arrayfire && mkdir build
+        cd build && cmake -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems" ..
+        cmake --build ./ -j4 --config Release
+        cmake --install ./
