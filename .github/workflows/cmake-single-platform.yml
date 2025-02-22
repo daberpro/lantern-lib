@@ -16,22 +16,53 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Cache vcpkg and installed dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ github.workspace }}/vcpkg
+          C:/Users/runneradmin/AppData/Local/vcpkg/archives
+        key: vcpkg-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          vcpkg-${{ runner.os }}-
+
     - name: Install vcpkg and dependencies
       shell: cmd
       run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        cd vcpkg && bootstrap-vcpkg.bat
-        cd ..
+        if not exist vcpkg (
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg && bootstrap-vcpkg.bat
+        )
         set PATH=%VCPKG_ROOT%;%PATH%
         vcpkg install freeimage openblas fftw3 --triplet x64-windows
+
+    - name: Cache ArrayFire build
+      uses: actions/cache@v3
+      with:
+        path: ${{ github.workspace }}/arrayfire/build
+        key: arrayfire-${{ runner.os }}-${{ hashFiles('arrayfire/CMakeLists.txt') }}
+        restore-keys: |
+          arrayfire-${{ runner.os }}-
 
     - name: Build ArrayFire
       shell: cmd
       run: |
-        git clone https://github.com/arrayfire/arrayfire.git
-        cd arrayfire && mkdir build
+        if not exist arrayfire (
+          git clone https://github.com/arrayfire/arrayfire.git
+        )
+        cd arrayfire
+        if not exist build mkdir build
         cd build
         cmake -G "Visual Studio 17 2022" -A x64 ^
           -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ..
         cmake --build . --config Release --parallel 4
         cmake --install .
+
+    - name: Build Latern-lib
+      shell: cmd
+      run: |
+        if not exist build mkdir build
+        cd build
+        cmake -G "Visual Studio 17 2022" -A x64 ^
+          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ..
+        cmake --build . --config Release --parallel 4
