@@ -14,8 +14,12 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
+    # ----------------------------------------------
+    # Cache vcpkg and Installed Dependencies
+    # ----------------------------------------------
     - name: Cache vcpkg and installed dependencies
       uses: actions/cache@v3
       with:
@@ -26,6 +30,9 @@ jobs:
         restore-keys: |
           vcpkg-${{ runner.os }}-
 
+    # ----------------------------------------------
+    # Install vcpkg and Dependencies (if not cached)
+    # ----------------------------------------------
     - name: Install vcpkg and dependencies
       shell: cmd
       run: |
@@ -36,6 +43,15 @@ jobs:
         set PATH=%VCPKG_ROOT%;%PATH%
         vcpkg install freeimage openblas fftw3 --triplet x64-windows
 
+    # Debug vcpkg cache
+    - name: Debug vcpkg cache
+      shell: cmd
+      run: |
+        dir C:\Users\runneradmin\AppData\Local\vcpkg\archives
+
+    # ----------------------------------------------
+    # Cache ArrayFire Build
+    # ----------------------------------------------
     - name: Cache ArrayFire build
       uses: actions/cache@v3
       with:
@@ -44,6 +60,9 @@ jobs:
         restore-keys: |
           arrayfire-${{ runner.os }}-
 
+    # ----------------------------------------------
+    # Build ArrayFire (if not cached)
+    # ----------------------------------------------
     - name: Build ArrayFire
       shell: cmd
       run: |
@@ -58,6 +77,15 @@ jobs:
         cmake --build . --config Release --parallel 4
         cmake --install .
 
+    # Debug ArrayFire cache
+    - name: Debug ArrayFire cache
+      shell: cmd
+      run: |
+        dir /s arrayfire\build
+
+    # ----------------------------------------------
+    # Build Latern-lib
+    # ----------------------------------------------
     - name: Build Latern-lib
       shell: cmd
       run: |
