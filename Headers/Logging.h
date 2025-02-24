@@ -1,5 +1,6 @@
 #pragma once
-#include "pch.h"
+#include "../pch.h"
+#include <Node.h>
 
 std::ostream &operator<<(std::ostream &os, af::array &tensor)
 {

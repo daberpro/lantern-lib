@@ -222,35 +222,21 @@ namespace latern
             if(a->total_gradient_size > right_child_index) b->gradient(right_child_index, 0) = objective.gradient(((right_child_index >= objective.total_gradient_size) ? 0 : right_child_index), 0) * (-(a->value) / pow(b->value, 2));
             break;
         case BinOp::NATURAL_LOG:
-            // skip calculate if a single input and output function
-            // parent was an independen variable
-            if (IsIndependentVariable(*a))
-                return;
             a->gradient(left_child_index, 0) = objective.gradient(((left_child_index >= objective.total_gradient_size) ? 0 : left_child_index), 0) / a->value;
             break;
         case BinOp::EXP:
-            if (IsIndependentVariable(*a))
-                return;
             a->gradient(left_child_index, 0) = objective.gradient(((left_child_index >= objective.total_gradient_size) ? 0 : left_child_index), 0) * a->value;
             break;
         case BinOp::SIN:
-            if (IsIndependentVariable(*a))
-                return;
             a->gradient(left_child_index, 0) = objective.gradient(((left_child_index >= objective.total_gradient_size) ? 0 : left_child_index), 0) * cos(a->value);
             break;
         case BinOp::COS:
-            if (IsIndependentVariable(*a))
-                return;
             a->gradient(left_child_index, 0) = objective.gradient(((left_child_index >= objective.total_gradient_size) ? 0 : left_child_index), 0) * -sin(a->value);
             break;
         case BinOp::TAN:
-            if (IsIndependentVariable(*a))
-                return;
             a->gradient(left_child_index, 0) = objective.gradient(((left_child_index >= objective.total_gradient_size) ? 0 : left_child_index), 0) / pow(cos(a->value), 2);
             break;
         case BinOp::SIGMOID:
-            if (IsIndependentVariable(*a))
-                return;
             a->gradient(left_child_index, 0) = objective.gradient(((left_child_index >= objective.total_gradient_size) ? 0 : left_child_index), 0) * (a->value * (1 - a->value));
             break;
         }

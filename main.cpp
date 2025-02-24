@@ -1,65 +1,83 @@
 #include "pch.h"
-#include "AutoGradient/ReverseMode.h"
-#include "Logging.h"
-#include "Vector.h"
+#include <ReverseMode.h>
+#include <Logging.h>
+#include <FeedForward.h>
+#include <Vector.h>
 #include <arrayfire.h>
-
-using namespace latern;
 
 int main(){	
 
-	// af::info();
+	latern::Node b1(1.0,"b1");
+	latern::Node b2(2.0,"b2");
+	latern::Node b3(3.0,"b3");
+	latern::Node b4 = b1 + b2;
+	latern::Node b5 = b3 + b4;
+	b4.SetLabel("b4");
+	b5.SetLabel("b5");
+	std::cout << std::string(50,'=') << "\n";
+	latern::print(b5);
+	latern::print(b4);
+	latern::print(b3);
+	latern::print(b2);
+	latern::print(b1);
+	std::cout << std::string(50,'=') << "\n";
+	
+	b1.value = 2.0;
+	latern::utility::Vector<latern::Node*> fix_position_node;
+	latern::FeedForward(&b5,fix_position_node);
 
-	// af::array rn1 = af::randn(3,3,3);
-	// af::array a1(2);
-	// af::array i1 = af::identity(3,3);
-	// af::array c1 = af::constant(1.0f, 4);
-	// af_print(a1);
-	// af_print(i1);
-	// af_print(c1);
-	// af_print(rn1);
-	// af_print(af::where(rn1 > 0));
+	std::cout << std::string(50,'=') << "\n";
+	latern::print(b5);
+	latern::print(b4);
+	latern::print(b3);
+	latern::print(b2);
+	latern::print(b1);
+	std::cout << std::string(50,'=') << "\n";
 
-	// const uint32_t width = 400, height = 400;
-	// af::Window window(width,height,"Test window");
-
-	// // af::array img = af::constant(0,width,height);
-	// // af::array noise = af::randu(width,height);
-	// // img(noise > 0.5) = 1.0f;
-
-	// af::array range(af::seq(-af::Pi,af::Pi, 0.01f));
-	// af::array sin(af::sin(range));
-
-	// do{
-	// 	window.plot(range,sin);
-	// }while(!window.close());
-
-	::utility::Vector<std::string> v1;
-	v1.push_back("Apel");
-	for(std::string& v : v1){
-		std::cout << v << "\n";
-	}
-
-	Node c1(2.5,"c1");
-	Node c2(3.4,"c2");
-	Node c3 = c1 * c2;
-	Node c4 = c1 + c2;
-	Node c5 = c3 / c4;
-	Node c6 = c1 * c5;
+	latern::Node c1(2.5,"c1");
+	latern::Node c2(3.4,"c2");
+	latern::Node c3 = c1 * c2;
+	latern::Node c4 = c1 + c2;
+	latern::Node c5 = c3 / c4;
+	latern::Node c6 = c1 * c5;
 	c3.SetLabel("c3");
 	c4.SetLabel("c4");
 	c5.SetLabel("c5");
 	c6.SetLabel("c6");
-	ReverseModeAD(c6);
+	latern::ReverseModeAD(c6);
 	
-	std::cout << std::string(50,'=') << "\n";
-	print(c6);
-	print(c5);
-	print(c4);
-	print(c3);
-	print(c2);
-	print(c1);
-	std::cout << std::string(50,'=');
+	// std::cout << std::string(50,'=') << "\n";
+	// print(c6);
+	// print(c5);
+	// print(c4);
+	// print(c3);
+	// print(c2);
+	// print(c1);
+	// std::cout << std::string(50,'=');
+
+	// Node a1(4.4,"a1");
+	// Node a2(3.3,"a2");
+	// Node a3 = Sigmoid(a1);
+	// Node a4 = Sigmoid(a2);
+	// Node a5 = NaturalLog(a4);
+	// Node a6 = a4 * a5;
+	// Node a7 = a3 * a6;
+	// a3.SetLabel("a3");
+	// a4.SetLabel("a4");
+	// a5.SetLabel("a5");
+	// a6.SetLabel("a6");
+	// a7.SetLabel("a7");
+	// ReverseModeAD(a7);
+
+	// std::cout << std::string(50,'=') << "\n";
+	// print(a7);
+	// print(a6);
+	// print(a5);
+	// print(a4);
+	// print(a3);
+	// print(a2);
+	// print(a1);
+	// std::cout << std::string(50,'=');
 
     // Node x(2.5);
     // Node sg = Sigmoid(x);

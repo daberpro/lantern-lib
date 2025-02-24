@@ -1,5 +1,5 @@
 #pragma once
-#include "pch.h"
+#include "../pch.h"
 
 namespace latern {
 
@@ -75,6 +75,17 @@ namespace latern {
                 this->ResizeCapacity();
             }
 
+            Vector(std::initializer_list<T> data){
+                this->m_size = data.size();
+                this->capacity = data.size();
+                this->data = (T*)::operator new(this->m_size * sizeof(T));
+
+                uint32_t i = 0;
+                for(auto item: data ){
+                    new(&this->data[i++]) T(std::move(item));
+                }
+            }
+
             Vector(){}
 
             void push_back(T&& data){
@@ -118,7 +129,7 @@ namespace latern {
                 ::operator delete[](this->data);
             }
 
-            T& operator [](uint32_t index){
+            T operator [](uint32_t index){
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in latern Vector utility \n";
                     exit(EXIT_FAILURE);
