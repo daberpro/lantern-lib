@@ -32,7 +32,7 @@ namespace latern{
             CalculateGradient(*(current_node));
             all_parents.pop_back();
             
-            if(!(current_node->parents[0] == nullptr )){
+            if(current_node->parents[0] != nullptr ){
                 all_parents.push_back(current_node->parents[0]);
             }
             if(first_node.parents[1] != nullptr){

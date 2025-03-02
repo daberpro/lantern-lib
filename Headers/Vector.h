@@ -86,8 +86,15 @@ namespace latern {
                 }
             }
 
-            Vector(){}
+            Vector(){
+                this->ResizeCapacity();
+            }
 
+            /**
+             * @brief push data into utility vector
+             * 
+             * @param data 
+             */
             void push_back(T&& data){
                 if(this->m_size >= this->capacity){
                     this->ResizeCapacity();
@@ -95,6 +102,11 @@ namespace latern {
                 new(&this->data[this->m_size++]) T(std::move(data));
             }
 
+            /**
+             * @brief push data into utility vector
+             * 
+             * @param data 
+             */
             void push_back(T& data){
                 if(this->m_size >= this->capacity){
                     this->ResizeCapacity();
@@ -102,6 +114,10 @@ namespace latern {
                 new(&this->data[this->m_size++]) T(data);
             }
 
+            /**
+             * @brief pop the last item on utility vector
+             * 
+             */
             void pop_back(){
                 if(this->m_size <= 0){
                     std::cerr << "Cannot pop back in latern Vector utility because the size of vector was zero\n";
@@ -110,15 +126,52 @@ namespace latern {
                 this->data[--this->m_size].~T();
             }
 
+            /**
+             * @brief check if the utility vector was empty
+             * 
+             * @return true 
+             * @return false 
+             */
             bool empty(){
                 return (this->m_size == 0);
             }
 
+            /**
+             * @brief get reference of the last item
+             * 
+             * @return T& 
+             */
             T& back(){
                 if(this->m_size <= 0){
                     return this->data[0];
                 }
                 return this->data[this->m_size-1];
+            }
+
+            void setAt(uint32_t&& index, T&& value){
+                if(index > this->m_size){
+                    std::cerr << "Cannot set utility vector data because index " << index << " is out of bound \n";
+                    exit(EXIT_FAILURE);
+                }
+
+                new(&this->data[index]) T(std::move(value));
+            }
+
+            void setAt(uint32_t& index, T& value){
+                if(index > this->m_size){
+                    std::cerr << "Cannot set utility vector data because index " << index << " is out of bound \n";
+                    exit(EXIT_FAILURE);
+                }
+
+                new(&this->data[index]) T(std::move(value));
+            }
+
+            bool has(uint32_t&& index){
+                return (this->data[index] != nullptr);
+            }
+
+            bool has(uint32_t& index){
+                return (this->data[index] != nullptr);
             }
 
             uint32_t size(){
@@ -130,6 +183,20 @@ namespace latern {
             }
 
             T operator [](uint32_t index){
+                if((index < 0 )|| (index > this->m_size)){
+                    std::cerr << "Cannot access index " << index << " in latern Vector utility \n";
+                    exit(EXIT_FAILURE);
+                }
+                return this->data[index];
+            }
+
+            /**
+             * @brief get reference at index, on utility vector
+             * 
+             * @param index 
+             * @return T& 
+             */
+            T& referenceAt(uint32_t index){
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in latern Vector utility \n";
                     exit(EXIT_FAILURE);

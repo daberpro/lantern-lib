@@ -6,3 +6,5 @@
 #include <arrayfire.h>
 #include <iterator>
 #include <cstddef>
+#include <unordered_set>
+#include <type_traits>
