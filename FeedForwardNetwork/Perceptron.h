@@ -73,14 +73,14 @@ namespace latern {
             Perceptron(double&& value, std::string&& label): value(value), label(label) {}
             
             double value = 0;
-            af::array gradient, gradient_based_input;
+            latern::utility::Vector<double> gradient, gradient_based_input;
 
             /**
              * NOTED: 
              * this af::array only for SGD-Momentum, AdaptiveGradientDescent only
              */
-            af::array vector_velocity;
-            af::array stack_prev_gradient;
+            latern::utility::Vector<double> vector_velocity;
+            latern::utility::Vector<double> stack_prev_gradient;
 
             /**
              * noted the 'prev_child_index' is only use for backpropagation
@@ -89,6 +89,7 @@ namespace latern {
              */
             uint32_t total_gradient_size = 0, prev_child_index = 0;
             Activation op = Activation::NOTHING;
+            latern::utility::InitType it = latern::utility::InitType::XavierGlorot;
             latern::utility::Vector<Perceptron*> parents;
             latern::utility::Vector<uint32_t> child_index;
 

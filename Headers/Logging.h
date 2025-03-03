@@ -17,6 +17,17 @@ std::ostream &operator<<(std::ostream &os, latern::Node &node)
     return os;
 }
 
+template <typename T>
+std::ostream &operator<<(std::ostream &os, latern::utility::Vector<T> &data)
+{
+    os << "\n";
+    for(auto& v : data){
+        os << v << "\n";
+    }
+    os << "\n";
+    return os;
+}
+
 namespace latern
 {
     void print(Node &node)

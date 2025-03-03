@@ -19,8 +19,8 @@ namespace latern
                 StochasticGradientDescentWithMomentum(double learning_rate = 0.01, double beta = 0.9) : learning_rate(learning_rate), beta(beta) {}
                 double GetDelta(const double &gradient,latern::perceptron::Perceptron* node,const uint32_t& child_index)
                 {
-                    node->vector_velocity(child_index, 0) = node->vector_velocity(child_index, 0) * this->beta + this->learning_rate * gradient;
-                    return node->vector_velocity(child_index, 0).scalar<double>();
+                    node->vector_velocity[child_index] = node->vector_velocity[child_index] * this->beta + this->learning_rate * gradient;
+                    return node->vector_velocity[child_index];
                 }
 
                 void SetIteration(const uint32_t& iter){

@@ -20,10 +20,10 @@ namespace latern
                 double GetDelta(const double &gradient,latern::perceptron::Perceptron* node,const uint32_t& child_index)
                 {
                     this->iteration++;
-                    node->stack_prev_gradient(child_index,0) = node->stack_prev_gradient(child_index,0) * this->beta_1 + (1.0 - this->beta_1) * gradient;
-                    node->vector_velocity(child_index, 0) = node->vector_velocity(child_index, 0) * this->beta_2 + (1.0 - this->beta_2) * pow(gradient,2);
-                    mt = node->stack_prev_gradient(child_index,0).scalar<double>()/(1.0 - pow(this->beta_1,this->iteration));
-                    vt = node->vector_velocity(child_index,0).scalar<double>()/(1.0 - pow(this->beta_2,this->iteration));
+                    node->stack_prev_gradient[child_index] = node->stack_prev_gradient[child_index] * this->beta_1 + (1.0 - this->beta_1) * gradient;
+                    node->vector_velocity[child_index] = node->vector_velocity[child_index] * this->beta_2 + (1.0 - this->beta_2) * pow(gradient,2);
+                    mt = node->stack_prev_gradient[child_index]/(1.0 - pow(this->beta_1,this->iteration));
+                    vt = node->vector_velocity[child_index]/(1.0 - pow(this->beta_2,this->iteration));
                     return (this->learning_rate * mt)/(sqrt(vt) + this->epsilon);
                 }
 

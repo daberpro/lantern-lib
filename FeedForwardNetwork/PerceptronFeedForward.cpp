@@ -19,13 +19,13 @@ namespace latern
             for (; i < node->parents.size(); i++)
             {
                 parent = node->parents[i];
-                value += parent->value * parent->gradient(node->child_index[i],0).scalar<double>();
+                value += parent->value * parent->gradient[node->child_index[i]];
             }
 
             /**
              * add bias to the sum product of weight and input
              */
-            value += node->gradient((node->total_gradient_size == 0? 1 : node->total_gradient_size),0).scalar<double>();
+            value += node->gradient[(node->total_gradient_size == 0? 1 : node->total_gradient_size)];
 
             switch (node->op)
             {
@@ -122,8 +122,12 @@ namespace latern
                      * after that set current_node->SetGradientInit(true);
                      * 
                      */
-                    current_node->gradient = af::randn(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1),1,f64);
-                    current_node->gradient_based_input = af::constant(1.0,max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), f64);
+                    current_node->gradient = std::move(latern::utility::GenerateRandomNormalDVector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 0.0f, 1.0f));
+                    current_node->gradient_based_input = std::move(latern::utility::GenerateRandomNormalDVector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 0.0f, 1.0f));
+                    if(current_node->op != Activation::NOTHING){
+                        current_node->gradient[current_node->total_gradient_size] = 0.0f;
+                        current_node->gradient_based_input[current_node->total_gradient_size] = 0.0f;
+                    }
                     current_node->SetGradientInit(true);
                 }
                 PerceptronUpdateCalculation(current_node);
@@ -131,7 +135,8 @@ namespace latern
             }
 
             // set for objective to only has 1 value for gradient
-            fix_position_node[0]->gradient(0,0) = 1.0f;
+            fix_position_node[0]->gradient[0] = 1.0f;
+            fix_position_node[0]->gradient[1] = 0.0f;
 
         };
 
