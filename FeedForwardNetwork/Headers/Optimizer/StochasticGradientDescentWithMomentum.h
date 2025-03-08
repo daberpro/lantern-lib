@@ -1,7 +1,7 @@
 #pragma once
 #include "../../Perceptron.h"
 
-namespace latern
+namespace lantern
 {
     namespace perceptron
     {
@@ -16,12 +16,23 @@ namespace latern
                 uint32_t iteration = 0;
 
             public:
+                #ifdef OPTIMIZE_VERSION
                 StochasticGradientDescentWithMomentum(double learning_rate = 0.01, double beta = 0.9) : learning_rate(learning_rate), beta(beta) {}
-                double GetDelta(const double &gradient,latern::perceptron::Perceptron* node,const uint32_t& child_index)
+                double GetDelta(const double &gradient,lantern::perceptron::Perceptron* node,const uint32_t& child_index)
                 {
-                    node->vector_velocity(child_index, 0) = node->vector_velocity(child_index, 0) * this->beta + this->learning_rate * gradient;
-                    return node->vector_velocity(child_index, 0).scalar<double>();
+                    node->vector_velocity[child_index] = node->vector_velocity[child_index] * this->beta + this->learning_rate * gradient;
+                    return node->vector_velocity[child_index];
                 }
+                #endif
+
+                #ifdef MATRIX_OPTIMIZE
+                StochasticGradientDescentWithMomentum(double learning_rate = 0.01, double beta = 0.9) : learning_rate(learning_rate), beta(beta) {}
+                double GetDelta(af::array& gradient,af::array& vector_velocity)
+                {
+                    vector_velocity = vector_velocity * this->beta + this->learning_rate * gradient;
+                    return vector_velocity;
+                }
+                #endif
 
                 void SetIteration(const uint32_t& iter){
                     this->iteration = iter;

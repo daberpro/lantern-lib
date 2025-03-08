@@ -6,7 +6,7 @@ enum class Direction
     RIGHT
 };
 
-namespace latern
+namespace lantern
 {
 
     void UpdateCalculation(Node *node)

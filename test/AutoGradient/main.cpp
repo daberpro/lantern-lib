@@ -22,10 +22,10 @@ FLOATING_TYPE Sigmoid(FLOATING_TYPE& x){
  */
 
 TEST(AutoGradeitn,SgSgId) {
-    latern::Node a(2.5);
-    latern::Node sg1 = latern::Sigmoid(a); 
-    latern::Node sg2 = latern::Sigmoid(sg1);
-    latern::ReverseModeAD(sg2);
+    lantern::Node a(2.5);
+    lantern::Node sg1 = lantern::Sigmoid(a); 
+    lantern::Node sg2 = lantern::Sigmoid(sg1);
+    lantern::ReverseModeAD(sg2);
     
     ASSERT_EQ(sg2.value,Sigmoid(sg1.value));
     ASSERT_EQ(sg1.value,Sigmoid(a.value));

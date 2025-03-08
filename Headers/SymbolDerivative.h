@@ -1,7 +1,7 @@
 #pragma once
 #include <cmath>
 
-namespace latern {
+namespace lantern {
 
     namespace math {
 

@@ -3,7 +3,7 @@
 #include <Node.h>
 #include <Vector.h>
 
-namespace latern {
+namespace lantern {
 
     /**
      * @brief FeedForward the current node root and bind fix position node into the second argument
@@ -11,11 +11,11 @@ namespace latern {
      * Example usage:
      * 
      * ```cpp
-     * latern::Node n1(1.0f);
-     * latern::Node n2(1.0f);
-     * latern::Node n3 = n1 + n2;
-     * latern::utility::Vector<Node*> fix_position_node;
-     * latern::FeedForward(n3,fix_position_node);
+     * lantern::Node n1(1.0f);
+     * lantern::Node n2(1.0f);
+     * lantern::Node n3 = n1 + n2;
+     * lantern::utility::Vector<Node*> fix_position_node;
+     * lantern::FeedForward(n3,fix_position_node);
      * ```
      *
      * @param objective 
@@ -29,10 +29,10 @@ namespace latern {
      * Example usage:
      * 
      * ```cpp
-     * latern::Node n2(1.0f);
-     * latern::Node n3 = n1 + n2;
-     * latern::utility::Vector<Node*> fix_position_node;
-     * latern::FeedForward(fix_position_node);
+     * lantern::Node n2(1.0f);
+     * lantern::Node n3 = n1 + n2;
+     * lantern::utility::Vector<Node*> fix_position_node;
+     * lantern::FeedForward(fix_position_node);
      * ```
      * 
      * @param fix_position_node 
@@ -45,11 +45,11 @@ namespace latern {
      * Example usage:
      * 
      * @code {.cpp}
-     * latern::Node n2(1.0f);
-     * latern::Node n3 = n1 + n2;
+     * lantern::Node n2(1.0f);
+     * lantern::Node n3 = n1 + n2;
      * n1.value = 2.0;
      * n2.value = 4.0;
-     * latern::UpdateCalculation(n3);
+     * lantern::UpdateCalculation(n3);
      * @endcode
      * 
      * @param fix_position_node 

@@ -2,20 +2,20 @@
 #include "../pch.h"
 #include <Vector.h>
 
-namespace latern {
+namespace lantern {
     
     namespace perceptron {
 
         enum class Activation {
-            NOTHING,
-            NATURAL_LOG,
-            EXP,
-            SIN,
-            COS,
-            TAN,
-            SIGMOID,
-            RELU,
-            SWISH
+            NOTHING, // 0
+            NATURAL_LOG, // 1
+            EXP, // 2
+            SIN, // 3
+            COS, // 4
+            TAN, // 5
+            SIGMOID, // 6
+            RELU, // 7 
+            SWISH // 8
         };
         
         class Perceptron {
@@ -24,63 +24,37 @@ namespace latern {
             std::string label = "No-Label";
     
         public:
+
+        
             /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             * @param op 
+             * NOTED: 
+             * this for all optimize except GradientDescent 
              */
-            Perceptron(double& value, Activation& op):
-                value(value), op(op) {}
-    
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             * @param op 
-             */
-            Perceptron(double&& value, Activation&& op):
-                value(value), op(op) {}
-    
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             */
-            Perceptron(double&& value): value(value) {}
+            lantern::utility::Vector<double> gradient, gradient_based_input;
+            lantern::utility::Vector<double> vector_velocity;
+            lantern::utility::Vector<double> stack_prev_gradient;
             
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             */
+            #ifdef OPTIMIZE_VERSION
+            Perceptron(double& value, Activation& op): value(value), op(op) {}
+            Perceptron(double&& value, Activation&& op): value(value), op(op) {}
+            Perceptron(double&& value): value(value) {}
             Perceptron(): value(1.0) {}
-
-
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param label 
-             */
             Perceptron(std::string&& label): label(label) {}
-    
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             * @param label 
-             */
             Perceptron(double&& value, std::string&& label): value(value), label(label) {}
             
             double value = 0;
-            af::array gradient, gradient_based_input;
+            #endif
+            
+            #ifdef MATRIX_OPTIMIZE
+            Perceptron(double* value, const Activation& op): value(value), op(op) {}
+            Perceptron(double* value): value(value) {}
+            Perceptron(): value(nullptr) {}
+            Perceptron(std::string&& label): label(label) {}
+            Perceptron(double* value, std::string&& label): value(value), label(label) {}
 
-            /**
-             * NOTED: 
-             * this af::array only for SGD-Momentum, AdaptiveGradientDescent only
-             */
-            af::array vector_velocity;
-            af::array stack_prev_gradient;
+            uint32_t layer = 0;
+            double* value = nullptr;
+            #endif
 
             /**
              * noted the 'prev_child_index' is only use for backpropagation
@@ -89,8 +63,9 @@ namespace latern {
              */
             uint32_t total_gradient_size = 0, prev_child_index = 0;
             Activation op = Activation::NOTHING;
-            latern::utility::Vector<Perceptron*> parents;
-            latern::utility::Vector<uint32_t> child_index;
+            lantern::utility::InitType it = lantern::utility::InitType::XavierGlorot;
+            lantern::utility::Vector<Perceptron*> parents;
+            lantern::utility::Vector<uint32_t> child_index;
 
             bool IsPrevParamsInit() const;
             void SetPrevParamsInit(bool&& is_init);

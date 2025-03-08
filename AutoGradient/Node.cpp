@@ -1,6 +1,6 @@
 #include "Node.h"
 
-namespace latern
+namespace lantern
 {
     Node Addition(Node &a, Node &b)
     {
