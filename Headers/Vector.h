@@ -185,6 +185,15 @@ namespace latern {
                 return this->data[this->m_size-1];
             }
 
+            T* ptrAt(const uint32_t& index){
+                if(index > this->m_size){
+                    std::cerr << "Cannot get utility vector pointer because index " << index << " is out of bound \n";
+                    exit(EXIT_FAILURE);
+                }
+
+                return &this->data[index];
+            }
+
             void setAt(uint32_t&& index, T&& value){
                 if(index > this->m_size){
                     std::cerr << "Cannot set utility vector data because index " << index << " is out of bound \n";
@@ -284,6 +293,22 @@ namespace latern {
                     other.m_size = 0;
                     other.capacity = 0;
                 }
+            }
+
+            T* getData(){
+                return this->data;
+            }
+
+            void clear(){
+                // Free existing memory
+                for (uint32_t i = 0; i < this->m_size; i++) {
+                    this->data[i].~T();
+                }
+                ::operator delete(this->data);
+                
+                this->m_size = 0;
+                this->capacity = 0;
+                this->data = nullptr;
             }
 
         };

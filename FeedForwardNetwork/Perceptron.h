@@ -7,15 +7,15 @@ namespace latern {
     namespace perceptron {
 
         enum class Activation {
-            NOTHING,
-            NATURAL_LOG,
-            EXP,
-            SIN,
-            COS,
-            TAN,
-            SIGMOID,
-            RELU,
-            SWISH
+            NOTHING, // 0
+            NATURAL_LOG, // 1
+            EXP, // 2
+            SIN, // 3
+            COS, // 4
+            TAN, // 5
+            SIGMOID, // 6
+            RELU, // 7 
+            SWISH // 8
         };
         
         class Perceptron {
@@ -24,63 +24,37 @@ namespace latern {
             std::string label = "No-Label";
     
         public:
+
+        
             /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             * @param op 
+             * NOTED: 
+             * this for all optimize except GradientDescent 
              */
-            Perceptron(double& value, Activation& op):
-                value(value), op(op) {}
-    
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             * @param op 
-             */
-            Perceptron(double&& value, Activation&& op):
-                value(value), op(op) {}
-    
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             */
-            Perceptron(double&& value): value(value) {}
+            latern::utility::Vector<double> gradient, gradient_based_input;
+            latern::utility::Vector<double> vector_velocity;
+            latern::utility::Vector<double> stack_prev_gradient;
             
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             */
+            #ifdef OPTIMIZE_VERSION
+            Perceptron(double& value, Activation& op): value(value), op(op) {}
+            Perceptron(double&& value, Activation&& op): value(value), op(op) {}
+            Perceptron(double&& value): value(value) {}
             Perceptron(): value(1.0) {}
-
-
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param label 
-             */
             Perceptron(std::string&& label): label(label) {}
-    
-            /**
-             * @brief Construct a new Perceptron object
-             * 
-             * @param value 
-             * @param label 
-             */
             Perceptron(double&& value, std::string&& label): value(value), label(label) {}
             
             double value = 0;
-            latern::utility::Vector<double> gradient, gradient_based_input;
+            #endif
+            
+            #ifdef MATRIX_OPTIMIZE
+            Perceptron(double* value, const Activation& op): value(value), op(op) {}
+            Perceptron(double* value): value(value) {}
+            Perceptron(): value(nullptr) {}
+            Perceptron(std::string&& label): label(label) {}
+            Perceptron(double* value, std::string&& label): value(value), label(label) {}
 
-            /**
-             * NOTED: 
-             * this af::array only for SGD-Momentum, AdaptiveGradientDescent only
-             */
-            latern::utility::Vector<double> vector_velocity;
-            latern::utility::Vector<double> stack_prev_gradient;
+            uint32_t layer = 0;
+            double* value = nullptr;
+            #endif
 
             /**
              * noted the 'prev_child_index' is only use for backpropagation
