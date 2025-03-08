@@ -1,7 +1,7 @@
 #pragma once
 #include "../pch.h"
 
-namespace latern {
+namespace lantern {
 
     namespace utility {
 
@@ -157,7 +157,7 @@ namespace latern {
              */
             void pop_back(){
                 if(this->m_size <= 0){
-                    std::cerr << "Cannot pop back in latern Vector utility because the size of vector was zero\n";
+                    std::cerr << "Cannot pop back in lantern Vector utility because the size of vector was zero\n";
                     exit(EXIT_FAILURE);
                 }
                 this->data[--this->m_size].~T();
@@ -233,7 +233,7 @@ namespace latern {
 
             const T& operator [](uint32_t index) const{
                 if((index < 0 )|| (index > this->m_size)){
-                    std::cerr << "Cannot access index " << index << " in latern Vector utility \n";
+                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
                     __debugbreak();
                     exit(EXIT_FAILURE);
                 }
@@ -242,7 +242,7 @@ namespace latern {
 
             T& operator [](uint32_t index) {
                 if((index < 0 )|| (index > this->m_size)){
-                    std::cerr << "Cannot access index " << index << " in latern Vector utility \n";
+                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
                     __debugbreak();
                     exit(EXIT_FAILURE);
                 }
@@ -257,7 +257,7 @@ namespace latern {
              */
             T& referenceAt(uint32_t index){
                 if((index < 0 )|| (index > this->m_size)){
-                    std::cerr << "Cannot access index " << index << " in latern Vector utility \n";
+                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
                     exit(EXIT_FAILURE);
                 }
                 return this->data[index];

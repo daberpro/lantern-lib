@@ -2,7 +2,7 @@
 #include "../pch.h"
 #include <Vector.h>
 
-namespace latern {
+namespace lantern {
     
     namespace perceptron {
 
@@ -30,9 +30,9 @@ namespace latern {
              * NOTED: 
              * this for all optimize except GradientDescent 
              */
-            latern::utility::Vector<double> gradient, gradient_based_input;
-            latern::utility::Vector<double> vector_velocity;
-            latern::utility::Vector<double> stack_prev_gradient;
+            lantern::utility::Vector<double> gradient, gradient_based_input;
+            lantern::utility::Vector<double> vector_velocity;
+            lantern::utility::Vector<double> stack_prev_gradient;
             
             #ifdef OPTIMIZE_VERSION
             Perceptron(double& value, Activation& op): value(value), op(op) {}
@@ -63,9 +63,9 @@ namespace latern {
              */
             uint32_t total_gradient_size = 0, prev_child_index = 0;
             Activation op = Activation::NOTHING;
-            latern::utility::InitType it = latern::utility::InitType::XavierGlorot;
-            latern::utility::Vector<Perceptron*> parents;
-            latern::utility::Vector<uint32_t> child_index;
+            lantern::utility::InitType it = lantern::utility::InitType::XavierGlorot;
+            lantern::utility::Vector<Perceptron*> parents;
+            lantern::utility::Vector<uint32_t> child_index;
 
             bool IsPrevParamsInit() const;
             void SetPrevParamsInit(bool&& is_init);

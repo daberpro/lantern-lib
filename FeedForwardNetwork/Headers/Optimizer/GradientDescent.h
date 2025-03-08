@@ -1,7 +1,7 @@
 #pragma once
 #include "../../Perceptron.h"
 
-namespace latern {
+namespace lantern {
     namespace perceptron {
 
         namespace optimizer {
@@ -16,7 +16,7 @@ namespace latern {
                 
                 #ifdef OPTIMIZE_VERSION
                 GradientDescent(double learning_rate): learning_rate(learning_rate) {}
-                double GetDelta(const double& gradient, latern::perceptron::Perceptron* objective, const uint32_t& child_index){
+                double GetDelta(const double& gradient, lantern::perceptron::Perceptron* objective, const uint32_t& child_index){
                     return this->learning_rate * gradient;
                 }
                 #endif

@@ -1,6 +1,6 @@
 #include "Perceptron.h"
 
-namespace latern
+namespace lantern
 {
 
     namespace perceptron

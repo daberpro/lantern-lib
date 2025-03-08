@@ -1,42 +1,42 @@
-// latern::Node b1(1.0,"b1");
-	// latern::Node b2(2.0,"b2");
-	// latern::Node b3(3.0,"b3");
-	// latern::Node b4 = b1 + b2;
-	// latern::Node b5 = b3 + b4;
+// lantern::Node b1(1.0,"b1");
+	// lantern::Node b2(2.0,"b2");
+	// lantern::Node b3(3.0,"b3");
+	// lantern::Node b4 = b1 + b2;
+	// lantern::Node b5 = b3 + b4;
 	// b4.SetLabel("b4");
 	// b5.SetLabel("b5");
 
 	// std::cout << std::string(50,'=') << "\n";
-	// latern::print(b5);
-	// latern::print(b4);
-	// latern::print(b3);
-	// latern::print(b2);
-	// latern::print(b1);
+	// lantern::print(b5);
+	// lantern::print(b4);
+	// lantern::print(b3);
+	// lantern::print(b2);
+	// lantern::print(b1);
 	// std::cout << std::string(50,'=') << "\n";
 	
 	// b1.value = 2.0;
-	// latern::utility::Vector<latern::Node*> fix_position_node;
-	// latern::FeedForward(&b5,fix_position_node);
+	// lantern::utility::Vector<lantern::Node*> fix_position_node;
+	// lantern::FeedForward(&b5,fix_position_node);
 
 	// std::cout << std::string(50,'=') << "\n";
-	// latern::print(b5);
-	// latern::print(b4);
-	// latern::print(b3);
-	// latern::print(b2);
-	// latern::print(b1);
+	// lantern::print(b5);
+	// lantern::print(b4);
+	// lantern::print(b3);
+	// lantern::print(b2);
+	// lantern::print(b1);
 	// std::cout << std::string(50,'=') << "\n";
 
-	// latern::Node c1(2.5,"c1");
-	// latern::Node c2(3.4,"c2");
-	// latern::Node c3 = c1 * c2;
-	// latern::Node c4 = c1 + c2;
-	// latern::Node c5 = c3 / c4;
-	// latern::Node c6 = c1 * c5;
+	// lantern::Node c1(2.5,"c1");
+	// lantern::Node c2(3.4,"c2");
+	// lantern::Node c3 = c1 * c2;
+	// lantern::Node c4 = c1 + c2;
+	// lantern::Node c5 = c3 / c4;
+	// lantern::Node c6 = c1 * c5;
 	// c3.SetLabel("c3");
 	// c4.SetLabel("c4");
 	// c5.SetLabel("c5");
 	// c6.SetLabel("c6");
-	// latern::ReverseModeAD(c6);
+	// lantern::ReverseModeAD(c6);
 	
 	// std::cout << std::string(50,'=') << "\n";
 	// print(c6);
@@ -100,10 +100,10 @@
 parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input(objective.prev_child_index, 0).scalar<double>() * latern::math::dsigmoid(objective.value);
+                    gradient_of_function = objective.gradient_based_input(objective.prev_child_index, 0).scalar<double>() * lantern::math::dsigmoid(objective.value);
                     parent->vector_velocity(index, 0) = parent->vector_velocity(index, 0) * 0.9 + (1 - 0.9) * gradient_of_function * parent->value;
                     parent->gradient(index, 0) -= parent->vector_velocity(index, 0)  * 0.1; // !please delete 0.01 because it learning rate and not to be here, only dev purpose
-                    parent->gradient_based_input(index, 0) = objective.gradient_based_input(objective.prev_child_index, 0) * parent->gradient(index, 0) * latern::math::dsigmoid(objective.value);
+                    parent->gradient_based_input(index, 0) = objective.gradient_based_input(objective.prev_child_index, 0) * parent->gradient(index, 0) * lantern::math::dsigmoid(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time

@@ -1,7 +1,7 @@
 #pragma once
 #include "../../Perceptron.h"
 
-namespace latern
+namespace lantern
 {
     namespace perceptron
     {
@@ -17,7 +17,7 @@ namespace latern
 
             public:
                 AdaptiveMomentEstimation(double learning_rate = 0.01, double beta_1 = 0.9, double beta_2 = 0.999,double epsilon = 1e-8) : learning_rate(learning_rate), beta_1(beta_1), beta_2(beta_2), epsilon(epsilon) {}
-                double GetDelta(const double &gradient,latern::perceptron::Perceptron* node,const uint32_t& child_index)
+                double GetDelta(const double &gradient,lantern::perceptron::Perceptron* node,const uint32_t& child_index)
                 {
                     this->iteration++;
                     node->stack_prev_gradient[child_index] = node->stack_prev_gradient[child_index] * this->beta_1 + (1.0 - this->beta_1) * gradient;

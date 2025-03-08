@@ -6,7 +6,7 @@
 #define FLOATING_TYPE float
 #endif
 
-namespace latern {
+namespace lantern {
     
     enum class BinOp {
         NOTHING,

@@ -1,6 +1,6 @@
 #include "ReverseMode.h"
 
-namespace latern{
+namespace lantern{
 
     // !check for the parent pointer
     // if the pointer same as the current node pointer

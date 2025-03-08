@@ -3,7 +3,7 @@
 #include "Perceptron.h"
 #include <Vector.h>
 
-namespace latern
+namespace lantern
 {
 
     namespace perceptron
@@ -63,9 +63,9 @@ namespace latern
         #endif
         #ifdef MATRIX_OPTIMIZE
         void PerceptronUpdateCalculation(
-            latern::utility::Vector<af::array>& parameters,
-            latern::utility::Vector<latern::perceptron::Activation>& operators,
-            latern::utility::Vector<af::array>& outputs
+            lantern::utility::Vector<af::array>& parameters,
+            lantern::utility::Vector<lantern::perceptron::Activation>& operators,
+            lantern::utility::Vector<af::array>& outputs
         ){
             af::array inputs = parameters[0];
             af::array param;
@@ -106,12 +106,12 @@ namespace latern
 
         void FeedForward(
             #ifdef OPTIMIZE_VERSION
-            latern::utility::Vector<Perceptron *> &fix_position_node
+            lantern::utility::Vector<Perceptron *> &fix_position_node
             #endif
             #ifdef MATRIX_OPTIMIZE
-            latern::utility::Vector<af::array> &parameters
-            ,latern::utility::Vector<latern::perceptron::Activation> &operators
-            ,latern::utility::Vector<af::array> &outputs
+            lantern::utility::Vector<af::array> &parameters
+            ,lantern::utility::Vector<lantern::perceptron::Activation> &operators
+            ,lantern::utility::Vector<af::array> &outputs
             #endif
         )
         {
@@ -138,13 +138,13 @@ namespace latern
         void FeedForward(
             Perceptron *objective 
             #ifdef OPTIMIZE_VERSION
-            ,latern::utility::Vector<Perceptron *> &fix_position_node
+            ,lantern::utility::Vector<Perceptron *> &fix_position_node
             #endif
             #ifdef MATRIX_OPTIMIZE
-            ,latern::utility::Vector<af::array> &parameters
-            ,latern::utility::Vector<af::array> &gradient_based_parameters
-            ,latern::utility::Vector<latern::perceptron::Activation> &operators
-            ,latern::utility::Vector<af::array> &outputs
+            ,lantern::utility::Vector<af::array> &parameters
+            ,lantern::utility::Vector<af::array> &gradient_based_parameters
+            ,lantern::utility::Vector<lantern::perceptron::Activation> &operators
+            ,lantern::utility::Vector<af::array> &outputs
             #endif
         )
         {
@@ -155,10 +155,10 @@ namespace latern
             }
 
             #ifdef MATRIX_OPTIMIZE
-            latern::utility::Vector<Perceptron*> fix_position_node;
+            lantern::utility::Vector<Perceptron*> fix_position_node;
             #endif
 
-            latern::utility::Vector<Perceptron *> all_parents = {objective}, inputs_node;
+            lantern::utility::Vector<Perceptron *> all_parents = {objective}, inputs_node;
             std::unordered_set<Perceptron *> parents_already_added;
             fix_position_node.push_back(objective);
             uint32_t i = 0;
@@ -196,8 +196,8 @@ namespace latern
             uint32_t layer = 0;
             af::array temp_weight, temp_weight_gradient_based_input;
 
-            latern::utility::Vector<double> inputs;
-            latern::utility::Vector<latern::utility::Vector<double>> gradients;
+            lantern::utility::Vector<double> inputs;
+            lantern::utility::Vector<lantern::utility::Vector<double>> gradients;
             #endif
 
             for (int32_t i = fix_position_node.size() - 1; i >= 0;)
@@ -215,8 +215,8 @@ namespace latern
                      */
                     
                     #ifdef OPTIMIZE_VERSION
-                    current_node->gradient = std::move(latern::utility::GenerateRandomNormalDVector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 0.0f, 1.0f));
-                    current_node->gradient_based_input = std::move(latern::utility::Vector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 1.0f));
+                    current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 0.0f, 1.0f));
+                    current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 1.0f));
                     
                     if(current_node->op != Activation::NOTHING){
                         current_node->gradient[current_node->total_gradient_size] = 0.0f;
@@ -225,9 +225,9 @@ namespace latern
                     #endif
 
                     #ifdef MATRIX_OPTIMIZE
-                    current_node->gradient = std::move(latern::utility::GenerateRandomNormalDVector<double>(current_node->parents.size() + 1, 0.0f, 1.0f));
-                    current_node->gradient_based_input = std::move(latern::utility::Vector<double>(current_node->parents.size(), 1.0f));
-                    current_node->vector_velocity = std::move(latern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
+                    current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(current_node->parents.size() + 1, 0.0f, 1.0f));
+                    current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(current_node->parents.size(), 1.0f));
+                    current_node->vector_velocity = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
                     
                     if(current_node->op != Activation::NOTHING){
                         current_node->gradient[current_node->parents.size()] = 0.0f;

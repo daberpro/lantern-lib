@@ -90,9 +90,9 @@ jobs:
         dir /s arrayfire\build
 
     # ----------------------------------------------
-    # Build Latern-lib
+    # Build lantern-lib
     # ----------------------------------------------
-    - name: Build Latern-lib
+    - name: Build lantern-lib
       shell: cmd
       run: |
         if not exist build mkdir build

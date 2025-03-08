@@ -9,7 +9,7 @@ std::ostream &operator<<(std::ostream &os,const af::array &tensor)
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, latern::Node &node)
+std::ostream &operator<<(std::ostream &os, lantern::Node &node)
 {
     os << "Value: "<< std::fixed << std::setprecision(16) << node.value << ", "
        << "Operator: " << ((int)node.op)
@@ -18,7 +18,7 @@ std::ostream &operator<<(std::ostream &os, latern::Node &node)
 }
 
 template <typename T>
-std::ostream &operator<<(std::ostream &os, latern::utility::Vector<T> &data)
+std::ostream &operator<<(std::ostream &os, lantern::utility::Vector<T> &data)
 {
 
     if(std::is_same<double,T>::value){
@@ -35,7 +35,7 @@ std::ostream &operator<<(std::ostream &os, latern::utility::Vector<T> &data)
     return os;
 }
 
-namespace latern
+namespace lantern
 {
     void print(Node &node)
     {

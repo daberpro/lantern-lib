@@ -13,7 +13,7 @@ static af::array broad_mult(af::array &lhs, af::array &rhs){
 	return lhs * rhs;
 }
 
-namespace latern {
+namespace lantern {
     namespace perceptron {
 
         #ifdef OPTIMIZE_VERSION
@@ -28,13 +28,13 @@ namespace latern {
         void CalculateGradient(Perceptron &objective, Optimizer& opt)
         {
 
-            if((std::is_same<Optimizer, latern::perceptron::optimizer::StochasticGradientDescentWithMomentum>::value) ||
-               (std::is_same<Optimizer,latern::perceptron::optimizer::RootMeanSquarePropagation>::value) ||
-               (std::is_same<Optimizer,latern::perceptron::optimizer::AdaptiveMomentEstimation>::value)){
+            if((std::is_same<Optimizer, lantern::perceptron::optimizer::StochasticGradientDescentWithMomentum>::value) ||
+               (std::is_same<Optimizer,lantern::perceptron::optimizer::RootMeanSquarePropagation>::value) ||
+               (std::is_same<Optimizer,lantern::perceptron::optimizer::AdaptiveMomentEstimation>::value)){
 
                 #ifdef OPTIMIZE_VERSION
                 if(!objective.IsVectorVelocityInit()){
-                    objective.vector_velocity = std::move(latern::utility::Vector<double>(max(objective.total_gradient_size + (objective.op == Activation::NOTHING? 0 : (objective.total_gradient_size == 0? 2 : 1)),1),0.0f));
+                    objective.vector_velocity = std::move(lantern::utility::Vector<double>(max(objective.total_gradient_size + (objective.op == Activation::NOTHING? 0 : (objective.total_gradient_size == 0? 2 : 1)),1),0.0f));
                     objective.SetVectorVelocityInit(true);
                 }
 
@@ -42,20 +42,20 @@ namespace latern {
                 {
                     if (!parent->IsVectorVelocityInit())
                     {
-                        parent->vector_velocity = std::move(latern::utility::Vector<double>(max(parent->total_gradient_size + (parent->op == Activation::NOTHING? 0 : (parent->total_gradient_size == 0? 2 : 1)),1),0.0f));
+                        parent->vector_velocity = std::move(lantern::utility::Vector<double>(max(parent->total_gradient_size + (parent->op == Activation::NOTHING? 0 : (parent->total_gradient_size == 0? 2 : 1)),1),0.0f));
                         parent->SetVectorVelocityInit(true);
                     }
                 }
                 #endif
             }
 
-            if((std::is_same<Optimizer, latern::perceptron::optimizer::AdaptiveGradientDescent>::value) || 
-               (std::is_same<Optimizer,latern::perceptron::optimizer::AdaptiveMomentEstimation>::value)){
+            if((std::is_same<Optimizer, lantern::perceptron::optimizer::AdaptiveGradientDescent>::value) || 
+               (std::is_same<Optimizer,lantern::perceptron::optimizer::AdaptiveMomentEstimation>::value)){
                 
                 #ifdef OPTIMIZE_VERSION
 
                 if(!objective.IsPrevParamsInit()){
-                    objective.stack_prev_gradient = std::move(latern::utility::Vector<double>(max(objective.total_gradient_size + (objective.op == Activation::NOTHING? 0 : (objective.total_gradient_size == 0? 2 : 1)), 1), 0.0f));
+                    objective.stack_prev_gradient = std::move(lantern::utility::Vector<double>(max(objective.total_gradient_size + (objective.op == Activation::NOTHING? 0 : (objective.total_gradient_size == 0? 2 : 1)), 1), 0.0f));
                     objective.SetPrevParamsInit(true);
                 }
 
@@ -63,7 +63,7 @@ namespace latern {
                 {
                     if (!parent->IsPrevParamsInit())
                     {
-                        parent->stack_prev_gradient = std::move(latern::utility::Vector(max(parent->total_gradient_size + (parent->op == Activation::NOTHING? 0 : (parent->total_gradient_size == 0? 2 : 1)), 1), 0.0));
+                        parent->stack_prev_gradient = std::move(lantern::utility::Vector(max(parent->total_gradient_size + (parent->op == Activation::NOTHING? 0 : (parent->total_gradient_size == 0? 2 : 1)), 1), 0.0));
                         parent->SetPrevParamsInit(true);
                     }
                 }
@@ -85,9 +85,9 @@ namespace latern {
                     parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * latern::math::dlog(objective.value);
+                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * lantern::math::dlog(objective.value);
                     parent->gradient[index] -= opt.GetDelta(gradient_of_function * parent->value, parent, index);
-                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * latern::math::dlog(objective.value);
+                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * lantern::math::dlog(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time
@@ -111,9 +111,9 @@ namespace latern {
                     parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * latern::math::dexp(objective.value);
+                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * lantern::math::dexp(objective.value);
                     parent->gradient[index] -= opt.GetDelta(gradient_of_function * parent->value, parent, index);
-                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * latern::math::dexp(objective.value);
+                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * lantern::math::dexp(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time
@@ -137,9 +137,9 @@ namespace latern {
                     parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * latern::math::dsin(objective.value);
+                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * lantern::math::dsin(objective.value);
                     parent->gradient[index] -= opt.GetDelta(gradient_of_function * parent->value, parent, index);
-                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * latern::math::dsin(objective.value);
+                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * lantern::math::dsin(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time
@@ -163,9 +163,9 @@ namespace latern {
                     parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * latern::math::dcos(objective.value);
+                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * lantern::math::dcos(objective.value);
                     parent->gradient[index] -= opt.GetDelta(gradient_of_function * parent->value, parent, index);
-                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * latern::math::dcos(objective.value);
+                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * lantern::math::dcos(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time
@@ -189,9 +189,9 @@ namespace latern {
                     parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * latern::math::dtan(objective.value);
+                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * lantern::math::dtan(objective.value);
                     parent->gradient[index] -= opt.GetDelta(gradient_of_function * parent->value, parent, index);
-                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * latern::math::dtan(objective.value);
+                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * lantern::math::dtan(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time
@@ -216,9 +216,9 @@ namespace latern {
                     parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * latern::math::dsigmoid(objective.value);
+                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * lantern::math::dsigmoid(objective.value);
                     parent->gradient[index] -= opt.GetDelta(gradient_of_function * parent->value, parent, index);
-                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * latern::math::dsigmoid(objective.value);
+                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * lantern::math::dsigmoid(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time
@@ -243,9 +243,9 @@ namespace latern {
                     parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * latern::math::drelu(objective.value);
+                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * lantern::math::drelu(objective.value);
                     parent->gradient[index] -= opt.GetDelta(gradient_of_function * parent->value, parent, index);
-                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * latern::math::drelu(objective.value);
+                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * lantern::math::drelu(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time
@@ -270,9 +270,9 @@ namespace latern {
                     parent = objective.parents[i];
                     index = objective.child_index[i];
                     parent->prev_child_index = index;
-                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * latern::math::drelu(objective.value);
+                    gradient_of_function = objective.gradient_based_input[objective.prev_child_index] * lantern::math::drelu(objective.value);
                     parent->gradient[index] -= opt.GetDelta(gradient_of_function * parent->value, parent, index);
-                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * latern::math::drelu(objective.value);
+                    parent->gradient_based_input[index] = objective.gradient_based_input[objective.prev_child_index] * parent->gradient[index] * lantern::math::drelu(objective.value);
                     /**
                      * update for bias for parent and for objective itself because the bias always be the last gradient element
                      * so we just need to update gradient of parent one more time
@@ -337,10 +337,10 @@ namespace latern {
 
         template <typename Optimizer>
         void BackPropagation(
-            latern::utility::Vector<af::array>& parameters,
-            latern::utility::Vector<af::array>& gradient_based_parameters,
-            latern::utility::Vector<latern::perceptron::Activation>& operators,
-            latern::utility::Vector<af::array>& outputs,
+            lantern::utility::Vector<af::array>& parameters,
+            lantern::utility::Vector<af::array>& gradient_based_parameters,
+            lantern::utility::Vector<lantern::perceptron::Activation>& operators,
+            lantern::utility::Vector<af::array>& outputs,
             Optimizer& opt
         ){
 
@@ -351,7 +351,7 @@ namespace latern {
                 af::array& parameter = parameters[i];
                 af::array& output = outputs[i];
                 af::array& gradient_base_parameter = gradient_based_parameters[i + 1];
-                latern::perceptron::Activation& op = operators[i - 1];
+                lantern::perceptron::Activation& op = operators[i - 1];
 
                 switch (op)
                 {
