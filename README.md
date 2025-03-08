@@ -1,4 +1,4 @@
-# lantern
+# Lantern
 ### C++ Lib for deep learning
 ![Test Build](https://github.com/daberpro/lantern-lib/actions/workflows/cmake-single-platform.yml/badge.svg)
 ![GitHub release](https://img.shields.io/github/v/release/daberpro/lantern-lib?include_prereleases)
