@@ -10,7 +10,7 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/daberpro/lantern-lib)
 ![GitHub forks](https://img.shields.io/github/forks/daberpro/lantern-lib)
 
-## About lantern
+## About Lantern
 The lantern library is a library for developing deep learning written using the c++ programming language, built on the arrayfire library as a library for processing tensors.
 
 > **⚠️ Danger:** This is a critical warning message! \
