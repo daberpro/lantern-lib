@@ -80,17 +80,20 @@ namespace lantern
                 param = parameters[i].T();
                 result = af::matmul(param(af::span,af::seq(0,param.dims(1) - 2)),inputs);
                 result += param.col(param.dims(1) - 1);
+                result.eval();
                 
                 switch (operators[i - 1])
                 {
                 case Activation::SIGMOID:
                     result = 1 / ( 1 + af::exp(-result));
+                    result.eval();
                     break;
                 case Activation::RELU:
                     
                     break;
                 case Activation::SWISH:
                     result = result * (1 / ( 1 + af::exp(-result)));
+                    result.eval();
                     break;
                 }
                 inputs = result;
@@ -135,6 +138,9 @@ namespace lantern
             #endif
         }
 
+        #ifdef MATRIX_OPTIMIZE
+        template <typename Optimizer>
+        #endif
         void FeedForward(
             Perceptron *objective 
             #ifdef OPTIMIZE_VERSION
@@ -145,6 +151,7 @@ namespace lantern
             ,lantern::utility::Vector<af::array> &gradient_based_parameters
             ,lantern::utility::Vector<lantern::perceptron::Activation> &operators
             ,lantern::utility::Vector<af::array> &outputs
+            ,Optimizer& opt
             #endif
         )
         {
@@ -194,10 +201,10 @@ namespace lantern
             
             #ifdef MATRIX_OPTIMIZE
             uint32_t layer = 0;
-            af::array temp_weight, temp_weight_gradient_based_input;
+            af::array temp_weight, temp_weight_gradient_based_input, vec_vel;
 
             lantern::utility::Vector<double> inputs;
-            lantern::utility::Vector<lantern::utility::Vector<double>> gradients;
+            lantern::utility::Vector<lantern::utility::Vector<double>> gradients,vector_velocity;
             #endif
 
             for (int32_t i = fix_position_node.size() - 1; i >= 0;)
@@ -227,6 +234,7 @@ namespace lantern
                     #ifdef MATRIX_OPTIMIZE
                     current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(current_node->parents.size() + 1, 0.0f, 1.0f));
                     current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(current_node->parents.size(), 1.0f));
+                    
                     current_node->vector_velocity = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
                     
                     if(current_node->op != Activation::NOTHING){
@@ -250,6 +258,7 @@ namespace lantern
                         inputs.push_back(*current_node->value);
                         if(temp_weight.isempty()){
                             temp_weight_gradient_based_input = af::array();
+                            vec_vel = af::array();
                         }
 
                     }else{
@@ -264,12 +273,15 @@ namespace lantern
 
                         gradients.push_back(current_node->gradient);
                         gradients.push_back(current_node->gradient_based_input);
+                        vector_velocity.push_back(current_node->vector_velocity);
 
                         if(layer != current_node->layer){
                             layer = current_node->layer;
                             
                             operators.push_back(current_node->op);
                             parameters.push_back(temp_weight);
+                            opt.vector_velocity.push_back(vec_vel);
+
                             gradient_based_parameters.push_back(temp_weight_gradient_based_input);
                             
                             /**
@@ -277,14 +289,16 @@ namespace lantern
                              */
                             temp_weight = af::array();
                             temp_weight_gradient_based_input = af::array();
+                            vec_vel = af::array();
                             
                             /**
-                             * set temp_weight wit current gradient of node
+                             * set temp_weight with current gradient of node
                              * and + 1 the gradient size which the size based on parents.size()
-                             * to add all weights and bias 
+                             * to add all weights
                              */
                             temp_weight = af::array(current_node->parents.size() + 1, 1,gradients[gradients.size()-2].getData());
                             temp_weight_gradient_based_input = af::array(current_node->parents.size(), 1,gradients[gradients.size()-1].getData());
+                            vec_vel = af::array(current_node->parents.size() + 1,1, vector_velocity[vector_velocity.size()-1].getData());
 
                         }
                         else
@@ -301,6 +315,11 @@ namespace lantern
                                 1, 
                                 temp_weight_gradient_based_input,
                                 af::array(current_node->parents.size(), 1,gradients[gradients.size()-1].getData())
+                            );
+                            vec_vel = af::join(
+                                1, 
+                                vec_vel,
+                                af::array(current_node->parents.size() + 1, 1, vector_velocity[vector_velocity.size()-1].getData())
                             );
                         } 
                     }
@@ -328,6 +347,7 @@ namespace lantern
             #ifdef MATRIX_OPTIMIZE
             parameters.push_back(temp_weight);
             gradient_based_parameters.push_back(temp_weight_gradient_based_input);
+            opt.vector_velocity.push_back(vec_vel);
 
             PerceptronUpdateCalculation(
                 parameters,
