@@ -390,7 +390,8 @@ namespace lantern {
 
                     // update parameter with all gradient weight and bias
                     // and set optimizer GetDelta
-                    parameter -= opt.GetDelta(all_gradient);
+                    parameter -= opt.GetDelta(all_gradient,i);
+                    parameter.eval();
                     // last set based parameter to pass the current weight gradient
                     // to next 
                     gradient_based_parameters[i] = af::batchFunc(
@@ -398,6 +399,7 @@ namespace lantern {
                         parameter(af::seq(0,outputs[i-1].dims(0) - 1),af::span),
                         static_cast<af::batchFunc_t>(multiply_elements)
                     );
+                    gradient_based_parameters[i].eval();
 
                     break;
                 case Activation::RELU:
@@ -438,7 +440,9 @@ namespace lantern {
 
                     // update parameter with all gradient weight and bias
                     // and set optimizer GetDelta
-                    parameter -= opt.GetDelta(all_gradient);
+                    parameter -= opt.GetDelta(all_gradient,i);
+                    parameter.eval();
+                    
                     // last set based parameter to pass the current weight gradient
                     // to next 
                     gradient_based_parameters[i] = af::batchFunc(
@@ -446,6 +450,7 @@ namespace lantern {
                         parameter(af::seq(0,outputs[i-1].dims(0) - 1),af::span),
                         static_cast<af::batchFunc_t>(multiply_elements)
                     );
+                    gradient_based_parameters[i].eval();
 
                     break;
                 }

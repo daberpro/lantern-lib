@@ -13,8 +13,7 @@ namespace lantern
             {
             private:
                 double learning_rate = 0.01, beta = 0.9;
-                uint32_t iteration = 0;
-
+                
             public:
                 #ifdef OPTIMIZE_VERSION
                 StochasticGradientDescentWithMomentum(double learning_rate = 0.01, double beta = 0.9) : learning_rate(learning_rate), beta(beta) {}
@@ -26,21 +25,16 @@ namespace lantern
                 #endif
 
                 #ifdef MATRIX_OPTIMIZE
+                lantern::utility::Vector<af::array> vector_velocity;
                 StochasticGradientDescentWithMomentum(double learning_rate = 0.01, double beta = 0.9) : learning_rate(learning_rate), beta(beta) {}
-                double GetDelta(af::array& gradient,af::array& vector_velocity)
+                af::array GetDelta(af::array& gradient, int32_t& index)
                 {
-                    vector_velocity = vector_velocity * this->beta + this->learning_rate * gradient;
-                    return vector_velocity;
+                    this->vector_velocity[index] *= this->beta;
+                    this->vector_velocity[index] += this->learning_rate * gradient;
+                    this->vector_velocity[index].eval();
+                    return this->vector_velocity[index];
                 }
                 #endif
-
-                void SetIteration(const uint32_t& iter){
-                    this->iteration = iter;
-                }
-
-                uint32_t GetIteration(){
-                    return this->iteration;
-                }
             };
 
         }

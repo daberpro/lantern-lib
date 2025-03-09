@@ -10,8 +10,7 @@ namespace lantern {
             private:
             
                 double learning_rate = 0.01;
-                uint32_t iteration = 0;
-            
+                
             public:
                 
                 #ifdef OPTIMIZE_VERSION
@@ -22,20 +21,12 @@ namespace lantern {
                 #endif
 
                 #ifdef MATRIX_OPTIMIZE
+                lantern::utility::Vector<af::array> vector_velocity;
                 GradientDescent(double learning_rate): learning_rate(learning_rate) {}
-                af::array GetDelta(af::array& gradient){
+                af::array GetDelta(af::array& gradient, int32_t& index){
                     return this->learning_rate * gradient;
                 }
                 #endif
-
-                void SetIteration(const uint32_t& iter){
-                    this->iteration = iter;
-                }
-
-                uint32_t GetIteration(){
-                    return this->iteration;
-                }
-            
             };
             
         }

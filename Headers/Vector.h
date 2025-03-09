@@ -231,7 +231,7 @@ namespace lantern {
                 ::operator delete[](this->data);
             }
 
-            const T& operator [](uint32_t index) const{
+            const T& operator [](const uint32_t& index) const{
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
                     __debugbreak();
@@ -240,7 +240,25 @@ namespace lantern {
                 return this->data[index];
             }
 
-            T& operator [](uint32_t index) {
+            T& operator [](const uint32_t& index) {
+                if((index < 0 )|| (index > this->m_size)){
+                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
+                    __debugbreak();
+                    exit(EXIT_FAILURE);
+                }
+                return this->data[index];
+            }
+
+            const T& operator [](const int32_t& index) const{
+                if((index < 0 )|| (index > this->m_size)){
+                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
+                    __debugbreak();
+                    exit(EXIT_FAILURE);
+                }
+                return this->data[index];
+            }
+
+            T& operator [](const int32_t& index) {
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
                     __debugbreak();

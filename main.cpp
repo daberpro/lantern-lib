@@ -9,7 +9,7 @@
 #include <random>
 #include <chrono>
 
-int main(){	
+int main(){
 
 	// af::array inputs(4,1);
 	// af::array outputs(4,1);
@@ -142,16 +142,26 @@ int main(){
 	lantern::utility::Vector<af::array> outputs;
 	lantern::utility::Vector<lantern::perceptron::Activation> operators;
 
+	lantern::perceptron::optimizer::StochasticGradientDescentWithMomentum gd(0.01,0.9);
+	// lantern::perceptron::optimizer::GradientDescent gd(0.01);
+
 	lantern::perceptron::FeedForward(
 		&o1,
 		parameters,
 		gradient_based_parameters, 
 		operators,
-		outputs
+		outputs,
+		gd
 	);
 
+	// std::cout << "Vector velocity\n";
+	// std::cout << std::string(50,'=') << "\n";
+	// for(auto& v: sgd.vector_velocity){
+	// 	std::cout << v << "\n";
+	// }
+	// std::cout << std::string(50,'=') << "\n";
+
 	gradient_based_parameters.push_back(af::constant(1.0f,1,f64));
-	lantern::perceptron::optimizer::GradientDescent gd(0.01);
 
 	std::random_device rd;
 	std::mt19937 rg(rd());
@@ -181,12 +191,19 @@ int main(){
 			outputs,
 			gd
 		);
-
+		
 		if(loss <= 0.001 && iter % 100 == 0){
 			break;
 		}
 		iter++;
 	}
+
+	// std::cout << "Vector velocity\n";
+	// std::cout << std::string(50,'=') << "\n";
+	// for(auto& v: sgd.vector_velocity){
+	// 	std::cout << v << "\n";
+	// }
+	// std::cout << std::string(50,'=') << "\n";
 
 	
 	std::cout << "\n\nParameters : \n";
