@@ -25,14 +25,14 @@ and lantern has several type of optimization such as
 - Adaptive Gradient Descent (AdaGrad)
 - Adaptive Gradient Estimation (Adam)
 
-lantern use Normal Distribution to initalize weight and bias \
-lantern has two type optimization, the first optimization \
-was using OPTIMIZE_VERSION and the second is MATRIX_OPTIMIZE \
+lantern use Normal Distribution to initalize weight and bias
+lantern has two type optimization, the first optimization
+was using OPTIMIZE_VERSION and the second is MATRIX_OPTIMIZE
 to use it just define macro with OPTIMIZE_VERSION or MATRIX_OPTIMIZE
 
-the main different between OPTIMIZE_VERSION and MATRIZ_OPTIMIZE \
-is the first use lantern utility vector to store and update the weights and bias \
-for Feed Forward Neural Network, and the second use arrayfire as a tensor and update \
+the main different between OPTIMIZE_VERSION and MATRIZ_OPTIMIZE
+is the first use lantern utility vector to store and update the weights and bias
+for Feed Forward Neural Network, and the second use arrayfire as a tensor and update
 weights and bias via arrayfire
 
 Example of code using OPTIMIZE_VERSION
