@@ -1,7 +1,7 @@
 #pragma once
 #include "../pch.h"
-#include <Node.h>
-#include <Perceptron.h>
+#include "../AutoGradient/Node.h"
+#include "../FeedForwardNetwork/FeedForwardNetwork.h"
 
 std::ostream &operator<<(std::ostream &os,const af::array &tensor)
 {
@@ -35,6 +35,7 @@ std::ostream &operator<<(std::ostream &os, lantern::utility::Vector<T> &data)
     return os;
 }
 
+
 namespace lantern
 {
     void print(Node &node)
@@ -59,17 +60,6 @@ namespace lantern
     }
     #endif
 
-    #ifdef MATRIX_OPTIMIZE
-    void print(perceptron::Perceptron &node)
-    {
-        std::cout << "\n[ " << std::left << std::setw(3) << node.GetLabel()
-                  << "Value: " << std::fixed << std::setprecision(16) << std::setw(3) << *(node.value)
-                  << ",Gradient Shape: 1 x " << std::setw(3) << node.total_gradient_size
-                  << ",Operator: " << ((int)node.op) << " ]\n"
-                  << "Gradient: " << node.gradient;
-    }
-    #endif
-
     #ifdef OPTIMIZE_VERSION
     template <typename... Args>
     void print(Args&... args)
@@ -87,6 +77,43 @@ namespace lantern
     #endif
 
     #ifdef MATRIX_OPTIMIZE
+
+    void print(perceptron::Perceptron &node)
+    {
+        std::cout << "\n[ " << std::left << std::setw(3) << node.GetLabel()
+                  << " Value: " << std::setw(3) << node.value
+                  << ",Parents Size: " << std::setw(3) << node.parents.size()
+                  << ",Operator: " << ((int)node.op) << " ]\n"
+                  << "Gradient: " << node.gradient;
+    }
+
+    void print(lantern::FeedForwardNetwork& ffn){
+        std::cout << std::string(70,'=') << '\n';
+        std::cout << " Lantern Feed Forward Network\n";
+        std::cout << " Input Size : " << ffn.inputs.size() << "\n";
+        std::cout << " Hidden Size : " << ffn.hiddens.size() << "\n";
+        std::cout << " Output Size : " << ffn.outputs.size() << "\n";
+        std::cout << std::string(70,'=') << '\n';
+        std::cout << "\n Input Layer \n";
+        for(auto& p : ffn.inputs){
+            print(p);
+        }
+        std::cout << '\n' << std::string(70,'=') << '\n';
+        std::cout << "\n Hidden Layer \n";
+        
+        for(auto& h : ffn.hiddens){
+            for(auto& p : h){
+                print(p);
+            }
+        }
+        std::cout << '\n' << std::string(70,'=') << '\n';
+        std::cout << "\n Output Layer \n";
+        for(auto& p : ffn.outputs){
+            print(p);
+        }
+        std::cout << '\n' << std::string(70,'=') << '\n';
+    }
+    
     template <typename... Args>
     void print(Args&... args)
     {

@@ -1,6 +1,6 @@
 #pragma once
 #include "../pch.h"
-#include <Vector.h>
+#include "../Headers/Vector.h"
 
 namespace lantern {
     
@@ -15,7 +15,8 @@ namespace lantern {
             TAN, // 5
             SIGMOID, // 6
             RELU, // 7 
-            SWISH // 8
+            SWISH, // 8
+            LINEAR, // 9
         };
         
         class Perceptron {
@@ -49,8 +50,8 @@ namespace lantern {
             Perceptron(double* value, const Activation& op): value(value), op(op) {}
             Perceptron(double* value): value(value) {}
             Perceptron(): value(nullptr) {}
-            Perceptron(std::string&& label): label(label) {}
-            Perceptron(double* value, std::string&& label): value(value), label(label) {}
+            Perceptron(const std::string& label): label(label) {}
+            Perceptron(double* value,const std::string& label): value(value), label(label) {}
 
             uint32_t layer = 0;
             double* value = nullptr;

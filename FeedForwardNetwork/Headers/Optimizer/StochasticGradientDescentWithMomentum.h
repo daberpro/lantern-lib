@@ -26,6 +26,7 @@ namespace lantern
 
                 #ifdef MATRIX_OPTIMIZE
                 lantern::utility::Vector<af::array> vector_velocity;
+                lantern::utility::Vector<af::array> stack_previous_gradient;
                 StochasticGradientDescentWithMomentum(double learning_rate = 0.01, double beta = 0.9) : learning_rate(learning_rate), beta(beta) {}
                 af::array GetDelta(af::array& gradient, int32_t& index)
                 {

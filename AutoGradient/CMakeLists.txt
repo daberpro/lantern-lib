@@ -1,5 +1,5 @@
 project(AutoGradient CXX)
-find_package(ArrayFire REQUIRED)
+# find_package(ArrayFire REQUIRED)
 add_library(${PROJECT_NAME} STATIC ReverseMode.cpp Node.cpp FeedForward.cpp)
 target_include_directories(
     ${PROJECT_NAME} PUBLIC 

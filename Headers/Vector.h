@@ -313,6 +313,28 @@ namespace lantern {
                 }
             }
 
+            /**
+             * @brief Pointer other vector to this vector
+             * 
+             * @param based 
+             */
+            void setPtrData(Vector& based){
+                this->data = based.getData();
+                this->m_size = based.size();
+                this->capacity = based.getCapacity();
+            }
+
+            void copyPtrData(Vector& based){
+                this->clear();
+                this->m_size = based.size();
+                this->capacity = based.getCapacity();
+
+                this->data = (T*)::operator new(this->capacity * sizeof(T));
+                for(uint32_t i = 0; i < this->m_size; i++){
+                    new(&this->data[i]) T(based.getData()[i]);
+                }
+            }
+
             T* getData(){
                 return this->data;
             }
