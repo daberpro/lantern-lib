@@ -66,6 +66,14 @@ namespace lantern
                 ((n.child_index.push_back(args.total_gradient_size++), n.parents.push_back(&args)), ...);
             };
 
+            template <typename... Args>
+            void Linear(Perceptron &n, Args &...args)
+            {
+                n.op = Activation::LINEAR;
+                n.it = lantern::utility::InitType::HeKaiming;
+                ((n.child_index.push_back(args.total_gradient_size++), n.parents.push_back(&args)), ...);
+            };
+
         }
     }
 }

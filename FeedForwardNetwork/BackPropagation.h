@@ -1,13 +1,13 @@
 #pragma once
 #include "Perceptron.h"
-#include <Vector.h>
+// already define in Perceptron.h
+// #include "../Headers/Vector.h"
 #include <Optimizer/GradientDescent.h>
 #include <Optimizer/AdaptiveMomentEstimation.h>
 #include <Optimizer/RootMeanSquaredPropagation.h>
 #include <Optimizer/StochasticGradientDescentWithMomentum.h>
 #include <Optimizer/AdaptiveGradientDescent.h>
-#include <SymbolDerivative.h>
-#include <typeinfo>
+#include "../Headers/SymbolDerivative.h"
 
 static af::array broad_mult(af::array &lhs, af::array &rhs){
 	return lhs * rhs;
@@ -32,7 +32,6 @@ namespace lantern {
                (std::is_same<Optimizer,lantern::perceptron::optimizer::RootMeanSquarePropagation>::value) ||
                (std::is_same<Optimizer,lantern::perceptron::optimizer::AdaptiveMomentEstimation>::value)){
 
-                #ifdef OPTIMIZE_VERSION
                 if(!objective.IsVectorVelocityInit()){
                     objective.vector_velocity = std::move(lantern::utility::Vector<double>(max(objective.total_gradient_size + (objective.op == Activation::NOTHING? 0 : (objective.total_gradient_size == 0? 2 : 1)),1),0.0f));
                     objective.SetVectorVelocityInit(true);
@@ -46,14 +45,13 @@ namespace lantern {
                         parent->SetVectorVelocityInit(true);
                     }
                 }
-                #endif
+                
             }
 
             if((std::is_same<Optimizer, lantern::perceptron::optimizer::AdaptiveGradientDescent>::value) || 
                (std::is_same<Optimizer,lantern::perceptron::optimizer::AdaptiveMomentEstimation>::value)){
                 
-                #ifdef OPTIMIZE_VERSION
-
+                
                 if(!objective.IsPrevParamsInit()){
                     objective.stack_prev_gradient = std::move(lantern::utility::Vector<double>(max(objective.total_gradient_size + (objective.op == Activation::NOTHING? 0 : (objective.total_gradient_size == 0? 2 : 1)), 1), 0.0f));
                     objective.SetPrevParamsInit(true);
@@ -68,7 +66,6 @@ namespace lantern {
                     }
                 }
 
-                #endif
             }
             
 
@@ -79,7 +76,6 @@ namespace lantern {
             switch (objective.op)
             {
             case Activation::NATURAL_LOG:
-                #ifdef OPTIMIZE_VERSION
                 for (uint32_t i = 0; i < objective.parents.size(); i++)
                 {
                     parent = objective.parents[i];
@@ -103,9 +99,8 @@ namespace lantern {
                         objective.gradient[1] -= opt.GetDelta(gradient_of_function,&objective,1);
                     }
                 };
-                #endif
+                
             case Activation::EXP:
-                #ifdef OPTIMIZE_VERSION
                 for (uint32_t i = 0; i < objective.parents.size(); i++)
                 {
                     parent = objective.parents[i];
@@ -129,9 +124,8 @@ namespace lantern {
                         objective.gradient[1] -= opt.GetDelta(gradient_of_function,&objective,1);
                     }
                 };
-                #endif
+                
             case Activation::SIN:
-                #ifdef OPTIMIZE_VERSION
                 for (uint32_t i = 0; i < objective.parents.size(); i++)
                 {
                     parent = objective.parents[i];
@@ -155,9 +149,8 @@ namespace lantern {
                         objective.gradient[1] -= opt.GetDelta(gradient_of_function,&objective,1);
                     }
                 };
-                #endif
+                
             case Activation::COS:
-                #ifdef OPTIMIZE_VERSION
                 for (uint32_t i = 0; i < objective.parents.size(); i++)
                 {
                     parent = objective.parents[i];
@@ -181,9 +174,8 @@ namespace lantern {
                         objective.gradient[1] -= opt.GetDelta(gradient_of_function,&objective,1);
                     }
                 };
-                #endif
+                
             case Activation::TAN:
-                #ifdef OPTIMIZE_VERSION
                 for (uint32_t i = 0; i < objective.parents.size(); i++)
                 {
                     parent = objective.parents[i];
@@ -207,10 +199,8 @@ namespace lantern {
                         objective.gradient[1] -= opt.GetDelta(gradient_of_function,&objective,1);
                     }
                 };
-                #endif
                 break;
             case Activation::SIGMOID:
-                #ifdef OPTIMIZE_VERSION
                 for (uint32_t i = 0; i < objective.parents.size(); i++)
                 {
                     parent = objective.parents[i];
@@ -234,10 +224,8 @@ namespace lantern {
                         objective.gradient[1] -= opt.GetDelta(gradient_of_function,&objective,1);
                     }
                 };
-                #endif 
                 break;
             case Activation::RELU:
-                #ifdef OPTIMIZE_VERSION
                 for (uint32_t i = 0; i < objective.parents.size(); i++)
                 {
                     parent = objective.parents[i];
@@ -261,10 +249,8 @@ namespace lantern {
                         objective.gradient[1] -= opt.GetDelta(gradient_of_function,&objective,1);
                     }
                 };
-                #endif 
                 break; 
             case Activation::SWISH:
-                #ifdef OPTIMIZE_VERSION
                 for (uint32_t i = 0; i < objective.parents.size(); i++)
                 {
                     parent = objective.parents[i];
@@ -288,7 +274,6 @@ namespace lantern {
                         objective.gradient[1] -= opt.GetDelta(gradient_of_function,&objective,1);
                     }
                 };
-                #endif
                 break;
             };
         };
@@ -359,6 +344,7 @@ namespace lantern {
 
                     // get all gradient from output
                     gradient = (output * (1 - output));
+                    gradient.eval();
                     // the bias gradient is gradient from output multiply
                     // by one
                     gradient_bias = gradient;
@@ -409,6 +395,56 @@ namespace lantern {
                     
                     // get all gradient from output
                     gradient = (1/(1+af::exp(-output))) + ((output * (1 - output)) * output);
+                    gradient.eval();
+                    // the bias gradient is gradient from output multiply
+                    // by one
+                    gradient_bias = gradient;
+                    // then create a vector of gradient with size of row is 
+                    // "gradient row" multiply with "previous outputs row"
+                    gradient = af::moddims(
+                        af::tile(gradient,outputs[i-1].dims(0),1),
+                        gradient.dims(0),
+                        outputs[i-1].dims(0)
+                    );
+                    // transform "previous outputs" then multiply 
+                    // each row of outputs with gradient then save into 
+                    // gradient weight
+                    gradient_weight = af::batchFunc(
+                        outputs[i-1].T(),
+                        gradient,
+                        static_cast<af::batchFunc_t>(multiply_elements)
+                    );
+                    // join gradient_weight and gradient_bias
+                    // to create a full gradient of weight and bias
+                    all_gradient = af::join(0,gradient_weight.T(),gradient_bias.T());
+                    // multiply all gradient of weight and bias with 
+                    // prev weight and bias which multiply by weight not inputs
+                    all_gradient = af::batchFunc(
+                        gradient_base_parameter.T(),
+                        all_gradient,
+                        static_cast<af::batchFunc_t>(multiply_elements)
+                    );
+
+                    // update parameter with all gradient weight and bias
+                    // and set optimizer GetDelta
+                    parameter -= opt.GetDelta(all_gradient,i);
+                    parameter.eval();
+                    
+                    // last set based parameter to pass the current weight gradient
+                    // to next 
+                    gradient_based_parameters[i] = af::batchFunc(
+                        gradient_base_parameter.T(),
+                        parameter(af::seq(0,outputs[i-1].dims(0) - 1),af::span),
+                        static_cast<af::batchFunc_t>(multiply_elements)
+                    );
+                    gradient_based_parameters[i].eval();
+
+                    break;
+                case Activation::LINEAR:
+                    
+                    // get all gradient from output
+                    gradient = output / output;
+                    gradient.eval();
                     // the bias gradient is gradient from output multiply
                     // by one
                     gradient_bias = gradient;

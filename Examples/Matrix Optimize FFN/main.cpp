@@ -1,7 +1,7 @@
-#include "pch.h"
+#include "../../pch.h"
 #define MATRIX_OPTIMIZE
-#include <Vector.h>
-#include "FeedForwardNetwork/FeedForwardNetwork.h"
+#include "../../Headers/Vector.h"
+#include "../../FeedForwardNetwork/FeedForwardNetwork.h"
 
 int main(){
 

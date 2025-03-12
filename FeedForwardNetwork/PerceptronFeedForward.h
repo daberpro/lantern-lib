@@ -1,7 +1,8 @@
 #pragma once
 #include "../pch.h"
 #include "Perceptron.h"
-#include <Vector.h>
+// already define in Perceptron.h
+// #include "../Headers/Vector.h"
 
 namespace lantern
 {
@@ -58,6 +59,9 @@ namespace lantern
             case Activation::SWISH:
                 node->value = value * (1.0 / (1.0 + exp(-value)));
                 break;
+            case Activation::LINEAR:
+                node->value = value;
+                break;
             }
         }
         #endif
@@ -95,14 +99,13 @@ namespace lantern
                     result = result * (1 / ( 1 + af::exp(-result)));
                     result.eval();
                     break;
+                case Activation::LINEAR:
+                    // do nothing
+                    break;
                 }
                 inputs = result;
                 outputs.push_back(result);
             }
-
-            // for(auto& v: outputs){
-            //     af_print(v);
-            // }
             
         }
         #endif
@@ -201,10 +204,10 @@ namespace lantern
             
             #ifdef MATRIX_OPTIMIZE
             uint32_t layer = 0;
-            af::array temp_weight, temp_weight_gradient_based_input, vec_vel;
+            af::array temp_weight, temp_weight_gradient_based_input, vec_vel, stack_prev_grad;
 
             lantern::utility::Vector<double> inputs;
-            lantern::utility::Vector<lantern::utility::Vector<double>> gradients,vector_velocity;
+            lantern::utility::Vector<lantern::utility::Vector<double>> gradients,vector_velocity, stack_previous_gradient;
             #endif
 
             for (int32_t i = fix_position_node.size() - 1; i >= 0;)
@@ -236,6 +239,7 @@ namespace lantern
                     current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(current_node->parents.size(), 1.0f));
                     
                     current_node->vector_velocity = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
+                    current_node->stack_prev_gradient = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
                     
                     if(current_node->op != Activation::NOTHING){
                         current_node->gradient[current_node->parents.size()] = 0.0f;
@@ -259,6 +263,7 @@ namespace lantern
                         if(temp_weight.isempty()){
                             temp_weight_gradient_based_input = af::array();
                             vec_vel = af::array();
+                            stack_prev_grad = af::array();
                         }
 
                     }else{
@@ -274,6 +279,7 @@ namespace lantern
                         gradients.push_back(current_node->gradient);
                         gradients.push_back(current_node->gradient_based_input);
                         vector_velocity.push_back(current_node->vector_velocity);
+                        stack_previous_gradient.push_back(current_node->stack_prev_gradient);
 
                         if(layer != current_node->layer){
                             layer = current_node->layer;
@@ -281,6 +287,7 @@ namespace lantern
                             operators.push_back(current_node->op);
                             parameters.push_back(temp_weight);
                             opt.vector_velocity.push_back(vec_vel);
+                            opt.stack_previous_gradient.push_back(stack_prev_grad);
 
                             gradient_based_parameters.push_back(temp_weight_gradient_based_input);
                             
@@ -290,6 +297,7 @@ namespace lantern
                             temp_weight = af::array();
                             temp_weight_gradient_based_input = af::array();
                             vec_vel = af::array();
+                            stack_prev_grad = af::array();
                             
                             /**
                              * set temp_weight with current gradient of node
@@ -299,6 +307,7 @@ namespace lantern
                             temp_weight = af::array(current_node->parents.size() + 1, 1,gradients[gradients.size()-2].getData());
                             temp_weight_gradient_based_input = af::array(current_node->parents.size(), 1,gradients[gradients.size()-1].getData());
                             vec_vel = af::array(current_node->parents.size() + 1,1, vector_velocity[vector_velocity.size()-1].getData());
+                            stack_prev_grad = af::array(current_node->parents.size() + 1,1, stack_previous_gradient[stack_previous_gradient.size()-1].getData());
 
                         }
                         else
@@ -320,6 +329,11 @@ namespace lantern
                                 1, 
                                 vec_vel,
                                 af::array(current_node->parents.size() + 1, 1, vector_velocity[vector_velocity.size()-1].getData())
+                            );
+                            stack_prev_grad = af::join(
+                                1, 
+                                stack_prev_grad,
+                                af::array(current_node->parents.size() + 1, 1, stack_previous_gradient[stack_previous_gradient.size()-1].getData())
                             );
                         } 
                     }
@@ -348,6 +362,7 @@ namespace lantern
             parameters.push_back(temp_weight);
             gradient_based_parameters.push_back(temp_weight_gradient_based_input);
             opt.vector_velocity.push_back(vec_vel);
+            opt.stack_previous_gradient.push_back(stack_prev_grad);
 
             PerceptronUpdateCalculation(
                 parameters,
