@@ -68,7 +68,7 @@ int main(){
 			operators,
 			outputs
 		);
-	
+
 		loss = lantern::perceptron::loss::SumSquaredResidual(outputs.back(),output);
 		std::cout << "Input : [" << parameters[0](0).scalar<double>() << "," << parameters[0](1).scalar<double>() << "] | Predict: " << outputs.back()(0).scalar<double>() << ", Target: " << target[i] << " | Loss " << loss << "\n";
 		gradient_based_parameters.back() = lantern::perceptron::loss::DerivativeSumSquaredResidual(outputs.back(),output);

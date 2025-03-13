@@ -87,32 +87,32 @@ namespace lantern
                   << "Gradient: " << node.gradient;
     }
 
-    void print(lantern::FeedForwardNetwork& ffn){
-        std::cout << std::string(70,'=') << '\n';
-        std::cout << " Lantern Feed Forward Network\n";
-        std::cout << " Input Size : " << ffn.inputs.size() << "\n";
-        std::cout << " Hidden Size : " << ffn.hiddens.size() << "\n";
-        std::cout << " Output Size : " << ffn.outputs.size() << "\n";
-        std::cout << std::string(70,'=') << '\n';
-        std::cout << "\n Input Layer \n";
-        for(auto& p : ffn.inputs){
-            print(p);
-        }
-        std::cout << '\n' << std::string(70,'=') << '\n';
-        std::cout << "\n Hidden Layer \n";
+    // void print(lantern::FeedForwardNetwork& ffn){
+    //     std::cout << std::string(70,'=') << '\n';
+    //     std::cout << " Lantern Feed Forward Network\n";
+    //     std::cout << " Input Size : " << ffn.inputs.size() << "\n";
+    //     std::cout << " Hidden Size : " << ffn.hiddens.size() << "\n";
+    //     std::cout << " Output Size : " << ffn.outputs.size() << "\n";
+    //     std::cout << std::string(70,'=') << '\n';
+    //     std::cout << "\n Input Layer \n";
+    //     for(auto& p : ffn.inputs){
+    //         print(p);
+    //     }
+    //     std::cout << '\n' << std::string(70,'=') << '\n';
+    //     std::cout << "\n Hidden Layer \n";
         
-        for(auto& h : ffn.hiddens){
-            for(auto& p : h){
-                print(p);
-            }
-        }
-        std::cout << '\n' << std::string(70,'=') << '\n';
-        std::cout << "\n Output Layer \n";
-        for(auto& p : ffn.outputs){
-            print(p);
-        }
-        std::cout << '\n' << std::string(70,'=') << '\n';
-    }
+    //     for(auto& h : ffn.hiddens){
+    //         for(auto& p : h){
+    //             print(p);
+    //         }
+    //     }
+    //     std::cout << '\n' << std::string(70,'=') << '\n';
+    //     std::cout << "\n Output Layer \n";
+    //     for(auto& p : ffn.outputs){
+    //         print(p);
+    //     }
+    //     std::cout << '\n' << std::string(70,'=') << '\n';
+    // }
     
     template <typename... Args>
     void print(Args&... args)
