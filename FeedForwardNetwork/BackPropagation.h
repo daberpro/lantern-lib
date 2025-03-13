@@ -334,58 +334,37 @@ namespace lantern {
             for(int32_t i = parameters.size(); i > 0; i--){
                 
                 af::array& parameter = parameters[i];
-                af::array& output = outputs[i];
-                af::array& gradient_base_parameter = gradient_based_parameters[i + 1];
+                af::array& output = outputs[i], prev_output = outputs[i-1];
+                af::array& gradient_based_parameter = gradient_based_parameters[i + 1];
                 lantern::perceptron::Activation& op = operators[i - 1];
 
                 switch (op)
                 {
                 case Activation::SIGMOID:
 
-                    // get all gradient from output
-                    gradient = (output * (1 - output));
-                    gradient.eval();
-                    // the bias gradient is gradient from output multiply
-                    // by one
+                    // get gradient from current input
+                    gradient = output * ( 1 - output );
+                    // multiply gradient with previous layer gradient
+                    gradient = gradient * gradient_based_parameter;
+                    // matrix multiplication with previous output
+                    // with gradient because the pattern of formula
+                    // in chain rule
+                    gradient_weight = af::matmul(prev_output,gradient.T());
+                    // because the derivative of bias is only 1
+                    // then just set gradient of bias to be gradient
                     gradient_bias = gradient;
-                    // then create a vector of gradient with size of row is 
-                    // "gradient row" multiply with "previous outputs row"
-                    gradient = af::moddims(
-                        af::tile(gradient,outputs[i-1].dims(0),1),
-                        gradient.dims(0),
-                        outputs[i-1].dims(0)
-                    );
-                    // transform "previous outputs" then multiply 
-                    // each row of outputs with gradient then save into 
-                    // gradient weight
-                    gradient_weight = af::batchFunc(
-                        outputs[i-1].T(),
-                        gradient,
-                        static_cast<af::batchFunc_t>(multiply_elements)
-                    );
-                    // join gradient_weight and gradient_bias
-                    // to create a full gradient of weight and bias
-                    all_gradient = af::join(0,gradient_weight.T(),gradient_bias.T());
-                    // multiply all gradient of weight and bias with 
-                    // prev weight and bias which multiply by weight not inputs
-                    all_gradient = af::batchFunc(
-                        gradient_base_parameter.T(),
-                        all_gradient,
-                        static_cast<af::batchFunc_t>(multiply_elements)
-                    );
-
-                    // update parameter with all gradient weight and bias
-                    // and set optimizer GetDelta
+                    // join weight and bias to process with current
+                    // parameter
+                    all_gradient = af::join(0,gradient_weight,gradient_bias.T());
+                    // update parameter using optimizer
                     parameter -= opt.GetDelta(all_gradient,i);
                     parameter.eval();
-                    // last set based parameter to pass the current weight gradient
-                    // to next 
-                    gradient_based_parameters[i] = af::batchFunc(
-                        gradient_base_parameter.T(),
-                        parameter(af::seq(0,outputs[i-1].dims(0) - 1),af::span),
-                        static_cast<af::batchFunc_t>(multiply_elements)
+
+                    // pass throught the current gradient to next layer
+                    gradient_based_parameters[i] = af::matmul(
+                        parameter(af::seq(0,parameter.dims(0) - 2),af::span),
+                        gradient
                     );
-                    gradient_based_parameters[i].eval();
 
                     break;
                 case Activation::RELU:
@@ -393,101 +372,34 @@ namespace lantern {
                     break;
                 case Activation::SWISH:
                     
-                    // get all gradient from output
-                    gradient = (1/(1+af::exp(-output))) + ((output * (1 - output)) * output);
-                    gradient.eval();
-                    // the bias gradient is gradient from output multiply
-                    // by one
+                    // get gradient from current input
+                    gradient = output +  (output * ( 1 - output )) * output;
+                    // multiply gradient with previous layer gradient
+                    gradient = gradient * gradient_based_parameter;
+                    // matrix multiplication with previous output
+                    // with gradient because the pattern of formula
+                    // in chain rule
+                    gradient_weight = af::matmul(prev_output,gradient.T());
+                    // because the derivative of bias is only 1
+                    // then just set gradient of bias to be gradient
                     gradient_bias = gradient;
-                    // then create a vector of gradient with size of row is 
-                    // "gradient row" multiply with "previous outputs row"
-                    gradient = af::moddims(
-                        af::tile(gradient,outputs[i-1].dims(0),1),
-                        gradient.dims(0),
-                        outputs[i-1].dims(0)
-                    );
-                    // transform "previous outputs" then multiply 
-                    // each row of outputs with gradient then save into 
-                    // gradient weight
-                    gradient_weight = af::batchFunc(
-                        outputs[i-1].T(),
-                        gradient,
-                        static_cast<af::batchFunc_t>(multiply_elements)
-                    );
-                    // join gradient_weight and gradient_bias
-                    // to create a full gradient of weight and bias
-                    all_gradient = af::join(0,gradient_weight.T(),gradient_bias.T());
-                    // multiply all gradient of weight and bias with 
-                    // prev weight and bias which multiply by weight not inputs
-                    all_gradient = af::batchFunc(
-                        gradient_base_parameter.T(),
-                        all_gradient,
-                        static_cast<af::batchFunc_t>(multiply_elements)
-                    );
-
-                    // update parameter with all gradient weight and bias
-                    // and set optimizer GetDelta
+                    // join weight and bias to process with current
+                    // parameter
+                    all_gradient = af::join(0,gradient_weight,gradient_bias.T());
+                    // update parameter using optimizer
                     parameter -= opt.GetDelta(all_gradient,i);
                     parameter.eval();
-                    
-                    // last set based parameter to pass the current weight gradient
-                    // to next 
-                    gradient_based_parameters[i] = af::batchFunc(
-                        gradient_base_parameter.T(),
-                        parameter(af::seq(0,outputs[i-1].dims(0) - 1),af::span),
-                        static_cast<af::batchFunc_t>(multiply_elements)
-                    );
-                    gradient_based_parameters[i].eval();
 
+                    // pass throught the current gradient to next layer
+                    gradient_based_parameters[i] = af::matmul(
+                        parameter(af::seq(0,parameter.dims(0) - 2),af::span),
+                        gradient
+                    );
+                    
                     break;
                 case Activation::LINEAR:
                     
-                    // get all gradient from output
-                    gradient = output / output;
-                    gradient.eval();
-                    // the bias gradient is gradient from output multiply
-                    // by one
-                    gradient_bias = gradient;
-                    // then create a vector of gradient with size of row is 
-                    // "gradient row" multiply with "previous outputs row"
-                    gradient = af::moddims(
-                        af::tile(gradient,outputs[i-1].dims(0),1),
-                        gradient.dims(0),
-                        outputs[i-1].dims(0)
-                    );
-                    // transform "previous outputs" then multiply 
-                    // each row of outputs with gradient then save into 
-                    // gradient weight
-                    gradient_weight = af::batchFunc(
-                        outputs[i-1].T(),
-                        gradient,
-                        static_cast<af::batchFunc_t>(multiply_elements)
-                    );
-                    // join gradient_weight and gradient_bias
-                    // to create a full gradient of weight and bias
-                    all_gradient = af::join(0,gradient_weight.T(),gradient_bias.T());
-                    // multiply all gradient of weight and bias with 
-                    // prev weight and bias which multiply by weight not inputs
-                    all_gradient = af::batchFunc(
-                        gradient_base_parameter.T(),
-                        all_gradient,
-                        static_cast<af::batchFunc_t>(multiply_elements)
-                    );
-
-                    // update parameter with all gradient weight and bias
-                    // and set optimizer GetDelta
-                    parameter -= opt.GetDelta(all_gradient,i);
-                    parameter.eval();
                     
-                    // last set based parameter to pass the current weight gradient
-                    // to next 
-                    gradient_based_parameters[i] = af::batchFunc(
-                        gradient_base_parameter.T(),
-                        parameter(af::seq(0,outputs[i-1].dims(0) - 1),af::span),
-                        static_cast<af::batchFunc_t>(multiply_elements)
-                    );
-                    gradient_based_parameters[i].eval();
-
                     break;
                 }
 
