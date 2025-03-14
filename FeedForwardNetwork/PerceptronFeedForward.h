@@ -145,10 +145,7 @@ namespace lantern
         template <typename Optimizer>
         #endif
         void FeedForward(
-            Perceptron *objective 
-            #ifdef OPTIMIZE_VERSION
-            ,lantern::utility::Vector<Perceptron *> &fix_position_node
-            #endif
+            lantern::perceptron::Layer& model_layer
             #ifdef MATRIX_OPTIMIZE
             ,lantern::utility::Vector<af::array> &parameters
             ,lantern::utility::Vector<af::array> &gradient_based_parameters
@@ -159,48 +156,8 @@ namespace lantern
         )
         {
 
-            if (objective->parents.empty())
-            {
-                return;
-            }
-
-            #ifdef MATRIX_OPTIMIZE
-            lantern::utility::Vector<Perceptron*> fix_position_node;
-            #endif
-
-            lantern::utility::Vector<Perceptron *> all_parents = {objective}, inputs_node;
-            std::unordered_set<Perceptron *> parents_already_added;
-            fix_position_node.push_back(objective);
-            uint32_t i = 0;
-            Perceptron *current_node = nullptr, *parent = nullptr;
-            while (!all_parents.empty())
-            {
-                current_node = all_parents.back();
-                all_parents.pop_back();
-
-                i = 0;
-                for (; i < current_node->parents.size(); i++)
-                {
-                    parent = current_node->parents[i];
-                    if (parent != nullptr)
-                    {
-                        all_parents.push_back(parent);
-                        if (parents_already_added.find(parent) == parents_already_added.end())
-                        {
-                            if(!parent->parents.empty()){
-                                fix_position_node.push_back(parent);
-                            }else{
-                                inputs_node.push_back(parent);
-                            }
-                            parents_already_added.insert(parent);
-                        }
-                    }
-                }
-            }
-
-            for(auto v: inputs_node){
-                fix_position_node.push_back(v);   
-            }
+            lantern::utility::Vector<Perceptron*> fix_position_node = model_layer.GetNode();
+            lantern::perceptron::Perceptron *current_node = nullptr;
             
             #ifdef MATRIX_OPTIMIZE
             uint32_t layer = 0;
@@ -224,23 +181,20 @@ namespace lantern
                      * 
                      */
                     
-                    #ifdef OPTIMIZE_VERSION
-                    current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 0.0f, 1.0f));
-                    current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 1.0f));
-                    
-                    if(current_node->op != Activation::NOTHING){
-                        current_node->gradient[current_node->total_gradient_size] = 0.0f;
-                        current_node->gradient_based_input[current_node->total_gradient_size] = 0.0f;
-                    }
-                    #endif
 
                     #ifdef MATRIX_OPTIMIZE
-                    current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(current_node->parents.size() + 1, 0.0f, 1.0f));
-                    current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(current_node->parents.size(), 1.0f));
-                    
-                    current_node->vector_velocity = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
-                    current_node->stack_prev_gradient = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
-                    
+                    if(!current_node->IsGradientInit()){
+                        current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(current_node->parents.size() + 1, 0.0f, 1.0f));
+                        current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(current_node->parents.size(), 1.0f));
+                        
+                        current_node->vector_velocity = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
+                        current_node->stack_prev_gradient = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
+                        
+                        current_node->SetGradientInit(true);
+                        current_node->SetVectorVelocityInit(true);
+                        current_node->SetPrevParamsInit(true);
+                    }
+
                     if(current_node->op != Activation::NOTHING){
                         current_node->gradient[current_node->parents.size()] = 0.0f;
                     }
@@ -339,24 +293,11 @@ namespace lantern
                     }
                     
                     #endif
-
-                    current_node->SetGradientInit(true);
                 }
 
-                #ifdef OPTIMIZE_VERSION
-                PerceptronUpdateCalculation(
-                    current_node
-                );
-                #endif
-
+                
                 --i;
             }
-
-            
-            #ifdef OPTIMIZE_VERSION
-            fix_position_node[0]->gradient[0] = 1.0f;
-            fix_position_node[0]->gradient[1] = 0.0f;
-            #endif
             
             #ifdef MATRIX_OPTIMIZE
             parameters.push_back(temp_weight);

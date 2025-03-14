@@ -27,19 +27,21 @@ int main(){
 	lantern::perceptron::activation::Swish(h3,i1,i2);
 	lantern::perceptron::activation::Swish(h4,i1,i2);
 	lantern::perceptron::activation::Sigmoid(o1,h4,h3,h2,h1);
-
-	lantern::perceptron::SetLayer<1>(h1,h2,h3,h4);
-	lantern::perceptron::SetLayer<2>(o1);
 	
 	lantern::utility::Vector<af::array> parameters;
 	lantern::utility::Vector<af::array> gradient_based_parameters;
 	lantern::utility::Vector<af::array> outputs;
 	lantern::utility::Vector<lantern::perceptron::Activation> operators;
 
+    lantern::perceptron::Layer layer;
+    layer.SetLayer<2>(o1);
+    layer.SetLayer<1>(h1,h2,h3,h4);
+    layer.SetLayer<0>(i1,i2);
+
 	lantern::perceptron::optimizer::AdaptiveMomentEstimation adam;
 
 	lantern::perceptron::FeedForward(
-		&o1,
+		layer,
 		parameters,
 		gradient_based_parameters, 
 		operators,
@@ -57,7 +59,7 @@ int main(){
 	af::array output;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
-	while(true){
+	while(iter < 10000){
 
 		i = dis(rg);
 		parameters[0] = af::array(2,1,input[i]);
@@ -81,9 +83,9 @@ int main(){
 			adam
 		);
 		
-		if(loss <= 0.001 && iter % 100 == 0){
-			break;
-		}
+		// if(loss <= 0.001 && iter % 100 == 0){
+		// 	break;
+		// }
 		iter++;
 	}
 

@@ -316,10 +316,6 @@ namespace lantern {
 
         #ifdef MATRIX_OPTIMIZE
 
-        af::array multiply_elements(const af::array& lhs,const af::array& rhs){
-            return lhs * rhs;
-        }
-
         template <typename Optimizer>
         void BackPropagation(
             lantern::utility::Vector<af::array>& parameters,
