@@ -121,6 +121,15 @@ namespace lantern
             #endif
         )
         {
+            #ifdef OPTIMIZE_VERSION
+            Perceptron *current_node = nullptr;
+            for (int32_t i = fix_position_node.size() - 1; i >= 0;)
+            {
+                current_node = fix_position_node[i];
+                PerceptronUpdateCalculation(current_node);
+                --i;
+            }
+            #endif
 
             #ifdef MATRIX_OPTIMIZE
             outputs.clear();
