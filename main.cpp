@@ -46,9 +46,11 @@ int main() {
     lantern::perceptron::activation::Swish(h23, h11, h12, h13);
     lantern::perceptron::activation::Sigmoid(o1, h21, h22, h23);
 
-    lantern::perceptron::SetLayer<1>(h11, h12, h13);
-    lantern::perceptron::SetLayer<2>(h21, h22, h23);
-    lantern::perceptron::SetLayer<3>(o1);
+	lantern::perceptron::Layer layer;
+	layer.SetLayer<3>(o1);
+	layer.SetLayer<2>(h21, h22, h23);
+	layer.SetLayer<1>(h11, h12, h13);
+	layer.SetLayer<0>(i1, i2);
 
     lantern::utility::Vector<af::array> parameters;
     lantern::utility::Vector<af::array> gradient_based_parameters;
@@ -56,8 +58,8 @@ int main() {
     lantern::utility::Vector<lantern::perceptron::Activation> operators;
 
     lantern::perceptron::optimizer::AdaptiveMomentEstimation adam;
-    lantern::perceptron::FeedForward(&o1, parameters, gradient_based_parameters, operators, outputs, adam);
-
+    lantern::perceptron::FeedForward(layer, parameters, gradient_based_parameters, operators, outputs, adam);
+    
     gradient_based_parameters.push_back(af::constant(1.0f, 1, f64));
 
     std::random_device rd;
@@ -68,7 +70,7 @@ int main() {
     af::array output;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
-    while (true) {
+    while (iter < 10000) {
         i = dis(rg);
         parameters[0] = af::array(2, 1, input[i]);
         output = af::array(1, 1, &target[i]);
@@ -83,9 +85,9 @@ int main() {
         gradient_based_parameters.back() = lantern::perceptron::loss::DerivativeSumSquaredResidual(outputs.back(), output);
         lantern::perceptron::BackPropagation(parameters, gradient_based_parameters, operators, outputs, adam);
 
-        if (loss <= 0.001 && iter % 100 == 0) {
-            break;
-        }
+        // if (loss <= 0.001 && iter % 500 == 0) {
+        //     break;
+        // }
         iter++;
     }
 
