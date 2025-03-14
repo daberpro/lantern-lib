@@ -34,6 +34,7 @@ namespace lantern {
             lantern::utility::Vector<double> gradient, gradient_based_input;
             lantern::utility::Vector<double> vector_velocity;
             lantern::utility::Vector<double> stack_prev_gradient;
+            uint32_t layer = 0;
             
             #ifdef OPTIMIZE_VERSION
             Perceptron(double& value, Activation& op): value(value), op(op) {}
@@ -53,7 +54,6 @@ namespace lantern {
             Perceptron(const std::string& label): label(label) {}
             Perceptron(double* value,const std::string& label): value(value), label(label) {}
 
-            uint32_t layer = 0;
             double* value = nullptr;
             #endif
 

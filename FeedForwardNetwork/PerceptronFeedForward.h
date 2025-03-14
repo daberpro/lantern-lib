@@ -181,6 +181,19 @@ namespace lantern
                      * 
                      */
                     
+                    #ifdef OPTIMIZE_VERSION
+                    if(!current_node->IsGradientInit()){
+                        current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 0.0f, 1.0f));
+                        current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 1.0f));
+                        
+                        if(current_node->op != Activation::NOTHING){
+                            current_node->gradient[current_node->total_gradient_size] = 0.0f;
+                            current_node->gradient_based_input[current_node->total_gradient_size] = 0.0f;
+                        }
+
+                        current_node->SetGradientInit(true);
+                    }
+                    #endif
 
                     #ifdef MATRIX_OPTIMIZE
                     if(!current_node->IsGradientInit()){
@@ -295,9 +308,20 @@ namespace lantern
                     #endif
                 }
 
-                
+                #ifdef OPTIMIZE_VERSION
+                PerceptronUpdateCalculation(
+                    current_node
+                );
+                #endif
+
                 --i;
             }
+
+            
+            #ifdef OPTIMIZE_VERSION
+            fix_position_node[0]->gradient[0] = 1.0f;
+            fix_position_node[0]->gradient[1] = 0.0f;
+            #endif
             
             #ifdef MATRIX_OPTIMIZE
             parameters.push_back(temp_weight);
