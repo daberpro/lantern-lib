@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.31)
 project(MatrixOptimizeFFN)
 
-add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ArrayFire::afcpu AutoGradient FeedForwardNetwork)
+add_executable(XOR_Matrix_Optimizer XOR.cpp)
+add_executable(GenderByWeightAndHeight GenderByWeightAndHeight.cpp)
+target_link_libraries(XOR_Matrix_Optimizer PRIVATE ArrayFire::afcpu AutoGradient FeedForwardNetwork)
+target_link_libraries(GenderByWeightAndHeight PRIVATE ArrayFire::afcpu AutoGradient FeedForwardNetwork)
