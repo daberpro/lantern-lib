@@ -1,3 +1,8 @@
+/**
+ * This file contain a perceptron calculation for feed forward
+ * to use this you must defin a macro with MATRIX_OPTIMIZE or OPTIMIZE_VERSION
+ * 
+ */
 #pragma once
 #include "../pch.h"
 #include "Perceptron.h"
@@ -14,6 +19,10 @@ namespace lantern
         void PerceptronUpdateCalculation(
             Perceptron *node
         ){
+            /**
+             * return void if the current node just a single node
+             * or an independen node
+             */
             if (node->parents.empty() || node->op == Activation::NOTHING)
             {
                 return;
@@ -33,6 +42,10 @@ namespace lantern
             value += node->gradient[(node->total_gradient_size == 0? 1 : node->total_gradient_size)];
             
             
+            /**
+             * do activation function which feed
+             * with sumproduct of weight with input and addition with bias
+             */
             switch (node->op)
             {
             case Activation::NATURAL_LOG:
@@ -110,18 +123,26 @@ namespace lantern
         }
         #endif
 
+        /**
+         * @brief Feed forward after init
+         * 
+         */
         void FeedForward(
             #ifdef OPTIMIZE_VERSION
-            lantern::utility::Vector<Perceptron *> &fix_position_node
+            lantern::utility::Vector<Perceptron *> &fix_position_node // get fix position node from prev feed forward
             #endif
             #ifdef MATRIX_OPTIMIZE
-            lantern::utility::Vector<af::array> &parameters
-            ,lantern::utility::Vector<lantern::perceptron::Activation> &operators
-            ,lantern::utility::Vector<af::array> &outputs
+            lantern::utility::Vector<af::array> &parameters // a container which containt weights and bias
+            ,lantern::utility::Vector<lantern::perceptron::Activation> &operators // a container which contain activation between layers
+            ,lantern::utility::Vector<af::array> &outputs // a container which contain outputs of previous feed forward
             #endif
         )
         {
             #ifdef OPTIMIZE_VERSION
+            /**
+             * update calculation of each node
+             * in layer for optimize_version 
+             */
             Perceptron *current_node = nullptr;
             for (int32_t i = fix_position_node.size() - 1; i >= 0;)
             {
@@ -132,6 +153,13 @@ namespace lantern
             #endif
 
             #ifdef MATRIX_OPTIMIZE
+            /**
+             * update calculation of each layer
+             * for matrix_optimize
+             * 
+             * previous outputs need to be clean because
+             * the update calculation will add new outputs vector
+             */
             outputs.clear();
             PerceptronUpdateCalculation(
                 parameters,
@@ -144,18 +172,27 @@ namespace lantern
         #ifdef MATRIX_OPTIMIZE
         template <typename Optimizer>
         #endif
+        /**
+         * @brief Feed forward init
+         * 
+         */
         void FeedForward(
-            lantern::perceptron::Layer& model_layer
+            lantern::perceptron::Layer& model_layer // get layer of model
             #ifdef MATRIX_OPTIMIZE
-            ,lantern::utility::Vector<af::array> &parameters
-            ,lantern::utility::Vector<af::array> &gradient_based_parameters
-            ,lantern::utility::Vector<lantern::perceptron::Activation> &operators
-            ,lantern::utility::Vector<af::array> &outputs
-            ,Optimizer& opt
+            ,lantern::utility::Vector<af::array> &parameters // a container to save parameters from model such as weight and bias
+            ,lantern::utility::Vector<af::array> &gradient_based_parameters // a container to save gradient for computing 
+            ,lantern::utility::Vector<lantern::perceptron::Activation> &operators // a container to save activation function between layer
+            ,lantern::utility::Vector<af::array> &outputs // a container to save outpus from feed forward
+            ,Optimizer& opt // optimizer 
+            ,lantern::utility::Vector<af::array> &batch_gradient // a container to save current gradient to mini batch
             #endif
         )
         {
 
+            /**
+             * get fix position node from layer
+             * it's will work for all type of optimization behavior
+             */
             lantern::utility::Vector<Perceptron*> fix_position_node = model_layer.GetNode();
             lantern::perceptron::Perceptron *current_node = nullptr;
             
@@ -226,7 +263,7 @@ namespace lantern
                          * push all pointer from current node which is 
                          * an input node, and set the matrix_gradient_base_input to empty
                          */
-                        inputs.push_back(*current_node->value);
+                        inputs.push_back(1.0f);
                         if(temp_weight.isempty()){
                             temp_weight_gradient_based_input = af::array();
                             vec_vel = af::array();
@@ -255,9 +292,12 @@ namespace lantern
                             parameters.push_back(temp_weight);
                             opt.vector_velocity.push_back(vec_vel);
                             opt.stack_previous_gradient.push_back(stack_prev_grad);
-
+                            
                             gradient_based_parameters.push_back(temp_weight_gradient_based_input);
                             
+                            // this only for init mini batch
+                            batch_gradient.push_back(af::constant(0.0f,temp_weight.dims(0),temp_weight.dims(1)));
+
                             /**
                              * reset temp weight and temp_weight_gradient_based_input
                              */
@@ -328,6 +368,9 @@ namespace lantern
             gradient_based_parameters.push_back(temp_weight_gradient_based_input);
             opt.vector_velocity.push_back(vec_vel);
             opt.stack_previous_gradient.push_back(stack_prev_grad);
+            
+            // this only for init mini batch
+            batch_gradient.push_back(af::constant(0.0f,temp_weight.dims(0),temp_weight.dims(1)));           
 
             PerceptronUpdateCalculation(
                 parameters,

@@ -82,22 +82,48 @@ namespace lantern {
 
             };
 
+            /**
+             * @brief get iterator begin 
+             * 
+             * @return Iterator 
+             */
             Iterator begin(){
                 return Iterator(&this->data[0]);
             }
 
+            /**
+             * @brief get end of iterator
+             * 
+             * @return Iterator 
+             */
             Iterator end(){
                 return Iterator(&this->data[this->m_size]);
             }
 
+            /**
+             * @brief Construct a new Vector object
+             * 
+             * @param init_capacity 
+             */
             Vector(const uint32_t& init_capacity): capacity(init_capacity){
                 this->ResizeCapacity(this->capacity);
             }
 
+            /**
+             * @brief Construct a new Vector eith default value
+             * 
+             * @param init_capacity 
+             * @param all_default 
+             */
             Vector(const uint32_t& init_capacity,const T& all_default): capacity(init_capacity){
                 this->ResizeCapacity(this->capacity, all_default);
             }
 
+            /**
+             * @brief Construct a new Vector object
+             * 
+             * @param data 
+             */
             Vector(std::initializer_list<T> data){
                 this->m_size = data.size();
                 this->capacity = data.size();
@@ -109,6 +135,11 @@ namespace lantern {
                 }
             }
 
+            /**
+             * @brief Construct a new Vector object
+             * 
+             * @param other 
+             */
             Vector(const Vector& other) {
                 this->m_size = other.m_size;
                 this->capacity = other.capacity;
@@ -119,10 +150,19 @@ namespace lantern {
                 }
             }
 
+            /**
+             * @brief Construct a new Vector object
+             * 
+             */
             Vector(){
                 this->ResizeCapacity(this->capacity + 10);
             }
 
+            /**
+             * @brief Get the Capacity 
+             * 
+             * @return uint32_t 
+             */
             uint32_t getCapacity() const {
                 return this->capacity;
             }
@@ -185,6 +225,12 @@ namespace lantern {
                 return this->data[this->m_size-1];
             }
 
+            /**
+             * @brief Get pointer of data at specific index
+             * 
+             * @param index 
+             * @return T* 
+             */
             T* ptrAt(const uint32_t& index){
                 if(index > this->m_size){
                     std::cerr << "Cannot get utility vector pointer because index " << index << " is out of bound \n";
@@ -194,6 +240,12 @@ namespace lantern {
                 return &this->data[index];
             }
 
+            /**
+             * @brief Set value at index
+             * 
+             * @param index 
+             * @param value 
+             */
             void setAt(uint32_t&& index, T&& value){
                 if(index > this->m_size){
                     std::cerr << "Cannot set utility vector data because index " << index << " is out of bound \n";
@@ -203,6 +255,12 @@ namespace lantern {
                 new(&this->data[index]) T(std::move(value));
             }
 
+            /**
+             * @brief Set value at index
+             * 
+             * @param index 
+             * @param value 
+             */
             void setAt(uint32_t& index, const T& value){
                 if(index > this->m_size){
                     std::cerr << "Cannot set utility vector data because index " << index << " is out of bound \n";
@@ -212,14 +270,33 @@ namespace lantern {
                 new(&this->data[index]) T(std::move(value));
             }
 
+            /**
+             * @brief Check if index was not empty
+             * 
+             * @param index 
+             * @return true 
+             * @return false 
+             */
             bool has(uint32_t&& index){
                 return (this->data[index] != nullptr);
             }
 
+            /**
+             * @brief Check if index was no empty
+             * 
+             * @param index 
+             * @return true 
+             * @return false 
+             */
             bool has(uint32_t& index){
                 return (this->data[index] != nullptr);
             }
 
+            /**
+             * @brief Get size
+             * 
+             * @return uint32_t 
+             */
             uint32_t size(){
                 return this->m_size;
             }
@@ -231,6 +308,12 @@ namespace lantern {
                 ::operator delete[](this->data);
             }
 
+            /**
+             * @brief Get data at index
+             * 
+             * @param index 
+             * @return const T& 
+             */
             const T& operator [](const uint32_t& index) const{
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
@@ -240,6 +323,13 @@ namespace lantern {
                 return this->data[index];
             }
 
+
+            /**
+             * @brief Get data at index
+             * 
+             * @param index 
+             * @return T& 
+             */
             T& operator [](const uint32_t& index) {
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
@@ -249,6 +339,12 @@ namespace lantern {
                 return this->data[index];
             }
 
+            /**
+             * @brief Get data at index
+             * 
+             * @param index 
+             * @return const T& 
+             */
             const T& operator [](const int32_t& index) const{
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
@@ -258,6 +354,12 @@ namespace lantern {
                 return this->data[index];
             }
 
+            /**
+             * @brief Get data at index
+             * 
+             * @param index 
+             * @return T& 
+             */
             T& operator [](const int32_t& index) {
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
@@ -324,6 +426,11 @@ namespace lantern {
                 this->capacity = based.getCapacity();
             }
 
+            /**
+             * @brief Copy pointer data to this vector
+             * 
+             * @param based 
+             */
             void copyPtrData(Vector& based){
                 this->clear();
                 this->m_size = based.size();
@@ -335,10 +442,19 @@ namespace lantern {
                 }
             }
 
+            /**
+             * @brief Get the Data
+             * 
+             * @return T* 
+             */
             T* getData(){
                 return this->data;
             }
 
+            /**
+             * @brief Clear this vector
+             * 
+             */
             void clear(){
                 // Free existing memory
                 for (uint32_t i = 0; i < this->m_size; i++) {
@@ -353,35 +469,21 @@ namespace lantern {
 
         };
 
+        /**
+         * @brief Generate rnadom normal distribution vector
+         * 
+         * @tparam T 
+         * @param size 
+         * @param mean 
+         * @param stddev 
+         * @return Vector<T> 
+         */
         template <typename T>
         Vector<T> GenerateRandomNormalDVector(const uint32_t& size, const T& mean, const T& stddev) {
             std::random_device rd;
             std::mt19937 gen(rd());
             std::normal_distribution<T> dist(mean, stddev);
 
-            Vector<T> result(size);
-            for (uint32_t i = 0; i < size; i++) {
-                result.push_back(dist(gen));
-            }
-            return result;
-        }
-
-        template <typename T>
-        Vector<T> GenerateRandomNormalDVectorInit(const uint32_t& size, const size_t& num_inputs, const size_t& num_outputs, const InitType& init_type) {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            double stddev;
-            
-            switch(init_type){
-                case InitType::XavierGlorot:
-                    stddev = sqrt(1.0 / (num_inputs + num_outputs));
-                break;
-                case InitType::HeKaiming:
-                    stddev = sqrt(2.0 / num_inputs);
-                break;
-            }
-            
-            std::normal_distribution<T> dist(0.0, stddev);
             Vector<T> result(size);
             for (uint32_t i = 0; i < size; i++) {
                 result.push_back(dist(gen));

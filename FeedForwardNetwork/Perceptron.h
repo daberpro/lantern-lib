@@ -6,6 +6,10 @@ namespace lantern {
     
     namespace perceptron {
 
+        /**
+         * Actiation function for each node
+         * NOTHING mean no operation will do with the node
+         */
         enum class Activation {
             NOTHING, // 0
             NATURAL_LOG, // 1
@@ -21,6 +25,7 @@ namespace lantern {
         
         class Perceptron {
         private:
+
             bool gradient_init = false, prev_params_init = false, vector_velocity_init = false;
             std::string label = "No-Label";
     
@@ -35,27 +40,15 @@ namespace lantern {
             lantern::utility::Vector<double> vector_velocity;
             lantern::utility::Vector<double> stack_prev_gradient;
             uint32_t layer = 0;
+            double value = 0;
             
-            #ifdef OPTIMIZE_VERSION
             Perceptron(double& value, Activation& op): value(value), op(op) {}
             Perceptron(double&& value, Activation&& op): value(value), op(op) {}
             Perceptron(double&& value): value(value) {}
             Perceptron(): value(1.0) {}
-            Perceptron(std::string&& label): label(label) {}
-            Perceptron(double&& value, std::string&& label): value(value), label(label) {}
-            
-            double value = 0;
-            #endif
-            
-            #ifdef MATRIX_OPTIMIZE
-            Perceptron(double* value, const Activation& op): value(value), op(op) {}
-            Perceptron(double* value): value(value) {}
-            Perceptron(): value(nullptr) {}
             Perceptron(const std::string& label): label(label) {}
-            Perceptron(double* value,const std::string& label): value(value), label(label) {}
-
-            double* value = nullptr;
-            #endif
+            Perceptron(const double& value,const std::string& label): value(value), label(label) {}
+            
 
             /**
              * noted the 'prev_child_index' is only use for backpropagation
@@ -64,14 +57,35 @@ namespace lantern {
              */
             uint32_t total_gradient_size = 0, prev_child_index = 0;
             Activation op = Activation::NOTHING;
-            lantern::utility::InitType it = lantern::utility::InitType::XavierGlorot;
             lantern::utility::Vector<Perceptron*> parents;
             lantern::utility::Vector<uint32_t> child_index;
 
+            /**
+             * @brief Get previous params init status
+             * 
+             * @return true 
+             * @return false 
+             */
             bool IsPrevParamsInit() const;
+            /**
+             * @brief Set the previous Params Init status
+             * 
+             * @param is_init 
+             */
             void SetPrevParamsInit(bool&& is_init);
 
+            /**
+             * @brief Get Vector velocity init status
+             * 
+             * @return true 
+             * @return false 
+             */
             bool IsVectorVelocityInit() const;
+            /**
+             * @brief Set the Vector Velocity Init status
+             * 
+             * @param is_init 
+             */
             void SetVectorVelocityInit(bool&& is_init);
             /**
              * @brief Return current status of gradient inside node

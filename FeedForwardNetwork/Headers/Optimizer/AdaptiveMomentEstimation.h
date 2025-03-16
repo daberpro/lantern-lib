@@ -17,7 +17,23 @@ namespace lantern
             public:
                 #ifdef OPTIMIZE_VERSION
                 double mt = 0, vt = 0;
+                /**
+                 * @brief Construct a new Adaptive Moment Estimation Optimizer
+                 * 
+                 * @param learning_rate 
+                 * @param beta_1 
+                 * @param beta_2 
+                 * @param epsilon 
+                 */
                 AdaptiveMomentEstimation(double learning_rate = 0.01, double beta_1 = 0.9, double beta_2 = 0.999,double epsilon = 1e-8) : learning_rate(learning_rate), beta_1(beta_1), beta_2(beta_2), epsilon(epsilon) {}
+                /**
+                 * @brief Get the Optimize result of gradient
+                 * 
+                 * @param gradient 
+                 * @param node 
+                 * @param child_index 
+                 * @return double 
+                 */
                 double GetDelta(const double &gradient,lantern::perceptron::Perceptron* node,const uint32_t& child_index)
                 {
                     this->iteration++;
@@ -33,7 +49,22 @@ namespace lantern
                 af::array mt, vt;
                 lantern::utility::Vector<af::array> vector_velocity;
                 lantern::utility::Vector<af::array> stack_previous_gradient;
+                /**
+                 * @brief Construct a new Adaptive Moment Estimation Optimizer
+                 * 
+                 * @param learning_rate 
+                 * @param beta_1 
+                 * @param beta_2 
+                 * @param epsilon 
+                 */
                 AdaptiveMomentEstimation(double learning_rate = 0.01, double beta_1 = 0.9, double beta_2 = 0.999,double epsilon = 1e-8) : learning_rate(learning_rate), beta_1(beta_1), beta_2(beta_2), epsilon(epsilon) {}
+                /**
+                 * @brief Get the Optimize result of gradient
+                 * 
+                 * @param gradient 
+                 * @param index 
+                 * @return af::array 
+                 */
                 af::array GetDelta(af::array& gradient, int32_t& index)
                 {
                     this->iteration++;
