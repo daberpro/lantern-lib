@@ -16,8 +16,8 @@ The lantern library is a library for developing deep learning written using the 
 > **⚠️ Danger:** This is a critical warning message! \
 > lantern-lib still in progress, and this lib still poor feature
 
-## Getting Started
-### Build From Scratch
+## # Getting Started
+### > Build From Scratch
 lantern was build on it's own component, but for several feature like plot and tensor
 lantern use external dependecies like arrayfire and matplot++
 to build lantern yout must have
@@ -27,7 +27,7 @@ to build lantern yout must have
 lantern use CMake for build, so make sure you have cmake already installed on your 
 device, the cmake version was use on this library is 3.31, and this lib was develop on Windows OS
 
-### Feed Forward Neural Network (FFN)
+### > Feed Forward Neural Network (FFN)
 lantern has a classic neural network which establish using perceptron neural network \
 and lantern has several type of optimization such as
 - Gradient Descent (GD)
