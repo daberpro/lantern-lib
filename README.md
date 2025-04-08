@@ -16,8 +16,18 @@ The lantern library is a library for developing deep learning written using the 
 > **⚠️ Danger:** This is a critical warning message! \
 > lantern-lib still in progress, and this lib still poor feature
 
-## Getting Started
-### Feed Forward Neural Network (FFN)
+## # Getting Started
+### > Build From Scratch
+lantern was build on it's own component, but for several feature like plot and tensor
+lantern use external dependecies like arrayfire and matplot++
+to build lantern yout must have
+1. ArrayFire
+2. Matplot++
+
+lantern use CMake for build, so make sure you have cmake already installed on your 
+device, the cmake version was use on this library is 3.31, and this lib was develop on Windows OS
+
+### > Feed Forward Neural Network (FFN)
 lantern has a classic neural network which establish using perceptron neural network \
 and lantern has several type of optimization such as
 - Gradient Descent (GD)
@@ -35,198 +45,213 @@ is the first use lantern utility vector to store and update the weights and bias
 for Feed Forward Neural Network, and the second use arrayfire as a tensor and update
 weights and bias via arrayfire
 
-Example of code using OPTIMIZE_VERSION
+#### Simple Example
+this is the easiest way to use lantern-lib with wrapper FeedForwardNetwork class
+
+Example of using MATRIX_OPTIMIZE
 ```cpp
-#include "../../pch.h"
-#define OPTIMIZE_VERSION
-#include "../../Headers/Vector.h"
-#include "../../FeedForwardNetwork/FeedForwardNetwork.h"
+#include "pch.h"
+#define MATRIX_OPTIMIZE
+#include <Vector.h>
+#include <Logging.h>
+#include "FeedForwardNetwork/FeedForwardNetwork.h"
 
-int main(){
+#define Activation lantern::perceptron::Activation
+#define Optimizer lantern::perceptron::optimizer
 
-    lantern::perceptron::Perceptron i1(1.0f,"i1");
-    lantern::perceptron::Perceptron i2(1.0f,"i2");
-    lantern::perceptron::Perceptron h1("h1");
-    lantern::perceptron::Perceptron h2("h2");
-    lantern::perceptron::Perceptron h3("h3");
-    lantern::perceptron::Perceptron h4("h4");
-    lantern::perceptron::Perceptron o1("o1");
+int main() {
 
-    lantern::perceptron::activation::Swish(h1,i1,i2);
-    lantern::perceptron::activation::Swish(h2,i1,i2);
-    lantern::perceptron::activation::Swish(h3,i1,i2);
-    lantern::perceptron::activation::Swish(h4,i1,i2);
-    lantern::perceptron::activation::Sigmoid(o1,h1,h2,h3,h4);
+	double input_data[8] = {1,1,0,0,1,0,1,0};
+	double target_data[4] = {0,1,1,0};
+	af::array input = af::array(4,2,input_data);
+	af::array target = af::array(4,1,target_data);
 
-    double inputs[4][2] = {
-        {1,1},
-        {1,0},
-        {0,1},
-        {0,0}
-    };
+	lantern::FeedForwardNetwork<Optimizer::AdaptiveMomentEstimation> model;
+	model.SetEpoch(10000);
+	model.SetBatchSize(3);
+	model.SetMaxTreshold(1e-06);
 
-    double outputs[4] = {
-        0,
-        1,
-        1,
-        0
-    };
+	model.AddInputLayer<Activation::NOTHING>(2);
+	model.AddHiddenLayer<Activation::SWISH>(3);
+	model.AddOutputLayer<Activation::SIGMOID>(1);
 
-    lantern::utility::Vector<lantern::perceptron::Perceptron*> fix_position_nodes;
-    lantern::perceptron::FeedForward(
-        &o1,
-        fix_position_nodes
-    );
+	model.InitModel();
+	// model.ShowParameters();
 
-    uint32_t iter = 0, selected_index = 0;
-    double loss = 0;
-    lantern::perceptron::optimizer::AdaptiveMomentEstimation adam;
-    // lantern::perceptron::optimizer::GradientDescent gd;
+	model.Train(
+		input,
+		target
+	);
 
-    std::random_device rd;
-    std::mt19937 rg(rd());
-    std::uniform_int_distribution<> rand(0,3);
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
-    while(true){
-
-        selected_index = rand(rg);
-        i1.value = inputs[selected_index][0];
-        i2.value = inputs[selected_index][1];
-        lantern::perceptron::FeedForward(fix_position_nodes);  
-        loss = pow(outputs[selected_index] - o1.value,2);
-
-        std::cout << "Inputs: ["        << inputs[selected_index][0] 
-                  << ","                << inputs[selected_index][1] 
-                  << "] | Predicted : " << o1.value 
-                  << ", Target : "      << outputs[selected_index] 
-                  << " | Loss : "       << loss 
-                  << "\n";
-
-        o1.gradient_based_input[0] = -2 * (outputs[selected_index] - o1.value);
-        
-        lantern::perceptron::BackPropagation(
-            o1,
-            adam
-        );
-
-        if(loss <= 0.001 && iter % 100 == 0){
-            break;
-        }
-
-        iter++;
-
-    }
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> total_running_times = end - start;
-    std::cout << std::string(70,'=') << '\n';
-    std::cout << "Total time : " << total_running_times.count() << "s\n";
-    std::cout << std::string(70,'=') << '\n';
-
-
+	lantern::utility::Vector<af::array> predict_result;
+	model.Predict(
+		input,
+		predict_result
+	);
+	
+	std::cout << std::string(70,'=') << '\n';
+	for(uint32_t i = 0; i < input.dims(0); i++){
+		std::cout << af::toString("Input : ",input.row(i),16,true) << '\n';
+		std::cout << af::toString("Output : ",predict_result[i],16,true) << '\n';
+		std::cout << std::string(70,'=') << '\n';
+	}
+    
     return 0;
 }
 ```
 
-Example of using MATRIX_OPTIMIZE
+#### Advance Example
+this is an advance example for you which want to create perceptron model
+from scratch using lantern-lib
 
+Example of using MATRIX_OPTIMIZE
 ```cpp
 #include "../../pch.h"
 #define MATRIX_OPTIMIZE
 #include "../../Headers/Vector.h"
 #include "../../FeedForwardNetwork/FeedForwardNetwork.h"
 
-int main(){
+int main() {
 
-    double input[4][2] = {
-		{1.0f, 1.0f},
-		{1.0f, 0.0f},
-		{0.0f, 1.0f},
-		{0.0f, 0.0f}
-	}; 
-	double target[4] = {0.0,1.0,1.0,0.0};
-	double loss = 0;
-	
-	lantern::perceptron::Perceptron i1(&input[0][0],"i1");
-	lantern::perceptron::Perceptron i2(&input[0][1],"i2");
-	lantern::perceptron::Perceptron h1("h1");
-	lantern::perceptron::Perceptron h2("h2");
-	lantern::perceptron::Perceptron h3("h3");
-	lantern::perceptron::Perceptron h4("h4");
-	lantern::perceptron::Perceptron o1("o1");
+    std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();	
+	std::atomic<int32_t> iteration(0);
+	std::atomic<double> loss(0);
+	std::atomic<bool> stop(false);
 
-	lantern::perceptron::activation::Swish(h1,i1,i2);
-	lantern::perceptron::activation::Swish(h2,i1,i2);
-	lantern::perceptron::activation::Swish(h3,i1,i2);
-	lantern::perceptron::activation::Swish(h4,i1,i2);
-	lantern::perceptron::activation::Sigmoid(o1,h4,h3,h2,h1);
-
-	lantern::perceptron::SetLayer<1>(h1,h2,h3,h4);
-	lantern::perceptron::SetLayer<2>(o1);
-	
-	lantern::utility::Vector<af::array> parameters;
-	lantern::utility::Vector<af::array> gradient_based_parameters;
-	lantern::utility::Vector<af::array> outputs;
-	lantern::utility::Vector<lantern::perceptron::Activation> operators;
-
-	lantern::perceptron::optimizer::AdaptiveMomentEstimation adam;
-
-	lantern::perceptron::FeedForward(
-		&o1,
-		parameters,
-		gradient_based_parameters, 
-		operators,
-		outputs,
-		adam
-	);
-
-	gradient_based_parameters.push_back(af::constant(1.0f,1,f64));
-
-	std::random_device rd;
-	std::mt19937 rg(rd());
-	std::uniform_int_distribution<> dis(0,3);
-
-	uint32_t i = 0, iter = 0;
-	af::array output;
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
-	while(true){
-
-		i = dis(rg);
-		parameters[0] = af::array(2,1,input[i]);
-		output = af::array(1,1,&target[i]);
-
-		lantern::perceptron::FeedForward(
-			parameters,
-			operators,
-			outputs
-		);
-	
-		loss = lantern::perceptron::loss::SumSquaredResidual(outputs.back(),output);
-		std::cout << "Input : [" << parameters[0](0).scalar<double>() << "," << parameters[0](1).scalar<double>() << "] | Predict: " << outputs.back()(0).scalar<double>() << ", Target: " << target[i] << " | Loss " << loss << "\n";
-		gradient_based_parameters.back() = lantern::perceptron::loss::DerivativeSumSquaredResidual(outputs.back(),output);
+	std::jthread learning([&]() -> void {
 		
-		lantern::perceptron::BackPropagation(
-			parameters,
-			gradient_based_parameters, 
-			operators,
-			outputs,
-			adam
-		);
+		double input[6][2] = {
+			{0.925925926,	0.148148148 }, // {170.0, 65.0} Male
+			{0.851851852,	0.037037037 }, // {160.0, 50.0} Female
+			{0.962962963,	0.185185185 }, // {175.0, 70.0} Male
+			{0.814814815,	0.000000000 }, // {155.0, 45.0} Female
+			{1.000000000,	0.222222222 }, // {180.0, 75.0} Male
+			{0.888888889,	0.074074074 }  // {165.0, 55.0} Female
+		};
+		double target[6] = {1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
 		
-		if(loss <= 0.001 && iter % 100 == 0){
-			break;
+		lantern::perceptron::Perceptron i1(input[0][0], "Height");
+		lantern::perceptron::Perceptron i2(input[0][1], "Weight");
+		lantern::perceptron::Perceptron h11("h11");
+		lantern::perceptron::Perceptron h12("h12");
+		lantern::perceptron::Perceptron h13("h13");
+		lantern::perceptron::Perceptron h21("h21");
+		lantern::perceptron::Perceptron h22("h22");
+		lantern::perceptron::Perceptron h23("h23");
+		lantern::perceptron::Perceptron o1("Output");
+	
+		lantern::perceptron::activation::Swish(h11, i1, i2);
+		lantern::perceptron::activation::Swish(h12, i1, i2);
+		lantern::perceptron::activation::Swish(h13, i1, i2);
+		lantern::perceptron::activation::Swish(h21, h11, h12, h13);
+		lantern::perceptron::activation::Swish(h22, h11, h12, h13);
+		lantern::perceptron::activation::Swish(h23, h11, h12, h13);
+		lantern::perceptron::activation::Sigmoid(o1, h21, h22, h23);
+	
+		lantern::perceptron::Layer layer;
+		layer.SetLayer<3>(o1);
+		layer.SetLayer<2>(h21, h22, h23);
+		layer.SetLayer<1>(h11, h12, h13);
+		layer.SetLayer<0>(i1, i2);
+	
+		lantern::utility::Vector<af::array> parameters;
+		lantern::utility::Vector<af::array> gradient_based_parameters;
+		lantern::utility::Vector<af::array> outputs;
+		lantern::utility::Vector<lantern::perceptron::Activation> operators;
+		lantern::utility::Vector<af::array> batch_gradient;
+	
+		lantern::perceptron::optimizer::AdaptiveMomentEstimation adam;
+		lantern::perceptron::FeedForward(layer, parameters, gradient_based_parameters, operators, outputs, adam, batch_gradient);
+		
+		gradient_based_parameters.push_back(af::constant(1.0f, 1, f64));
+
+		std::random_device rd;
+		std::mt19937 rg(rd());
+		std::uniform_int_distribution<> dis(0, 5);
+	
+		uint32_t i = 0, batch_iter = 0, batch_size = 3;
+		af::array output;
+		
+		while (iteration < 10000) {
+			i = dis(rg);
+			parameters[0] = af::array(2, 1, input[i]);
+			output = af::array(1, 1, &target[i]);
+	
+			lantern::perceptron::FeedForward(parameters, operators, outputs);
+			loss = lantern::perceptron::loss::SumSquaredResidual(outputs.back(), output);
+			
+			if(batch_size == 1)
+			{
+				gradient_based_parameters.back() = lantern::perceptron::loss::DerivativeSumSquaredResidual(outputs.back(), output);
+				lantern::perceptron::BackPropagation(parameters, gradient_based_parameters, operators, outputs, adam);
+			}
+			else
+			{
+				if(batch_iter % batch_size == 0 && batch_iter != 0){
+					
+					/**
+					 * calculate average gradient 
+					 * and reset batch_iter to 0
+					 * then update each parameter
+					 * using optimizer 
+					 */
+					for(int32_t p = parameters.size() - 1; p > 0; p--){
+						batch_gradient[p] /= batch_size;
+						batch_gradient[p].eval();
+						parameters[p] -= adam.GetDelta(batch_gradient[p],p);
+						parameters[p].eval();
+					}
+					batch_iter = 0;
+
+				}else{
+					gradient_based_parameters.back() = lantern::perceptron::loss::DerivativeSumSquaredResidual(outputs.back(), output);
+					lantern::perceptron::CalculateGradient(
+						parameters, 
+						gradient_based_parameters, 
+						operators, 
+						outputs, 
+						adam,
+						batch_gradient
+					);
+				}
+			}
+
+			if(loss <= 0.0001){
+				break;
+			}
+	
+			iteration++;
+			batch_iter++;
 		}
-		iter++;
-	}
+
+		stop = true;
+
+	});
+
+	std::jthread progress([&]()-> void {
+		while(!stop){
+			lantern::perceptron::ProgressBar(iteration,10000);
+			std::cout << std::fixed << std::setw(5) << " | Loss : " << std::setw(16) << std::setprecision(16) << loss << ", Iteration : " << std::setw(5) << iteration;
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			std::cout << std::flush;
+		}
+
+		if(stop && iteration < 10000){
+			lantern::perceptron::ProgressBar(10000,10000);
+			std::cout << std::fixed << std::setw(5) << " | Loss : " << std::setw(16) << std::setprecision(16) << loss << ", Iteration : " << std::setw(5) << iteration;
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			std::cout << std::flush;
+		}
+	});
+
 
     std::chrono::time_point<std::chrono::high_resolution_clock> end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> total_running_times = end - start;
-    std::cout << std::string(70,'=') << '\n';
-    std::cout << "Total time : " << total_running_times.count() << "s\n";
-    std::cout << std::string(70,'=') << '\n';
-	
+    std::cout << "\n";
+	std::cout << "Total time: " << total_running_times.count() << "s\n";
+    
     return 0;
 }
+
+
 ```
