@@ -6,5 +6,6 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR} 
     "D:/v3/include"
     ${CMAKE_CURRENT_SOURCE_DIR}/Headers
+    ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE ArrayFire::afcpu)
+target_link_libraries(${PROJECT_NAME} PRIVATE ArrayFire::afcpu matplot)

@@ -16,21 +16,25 @@ int main() {
 
 	lantern::FeedForwardNetwork<Optimizer::AdaptiveMomentEstimation> model;
 	model.SetEpoch(10000);
-	model.SetBatchSize(3);
-	model.SetMaxTreshold(1e-06);
+	model.SetBatchSize(2);
+	model.SetMaxTreshold(1e-08);
 
 	model.AddInputLayer<Activation::NOTHING>(2);
 	model.AddHiddenLayer<Activation::SWISH>(3);
+	model.AddHiddenLayer<Activation::SWISH>(4);
 	model.AddOutputLayer<Activation::SIGMOID>(1);
 
 	model.InitModel();
-	// model.ShowParameters();
-
-	model.Train(
+	
+	model.Train<double,af::array>(
 		input,
-		target
+		target,
+		lantern::perceptron::loss::SumSquaredResidual,
+		lantern::perceptron::loss::DerivativeSumSquaredResidual
 	);
-
+	model.ShowParameters();
+	
+	
 	lantern::utility::Vector<af::array> predict_result;
 	model.Predict(
 		input,

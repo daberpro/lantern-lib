@@ -1,4 +1,6 @@
 #pragma once
+#include "../pch.h"
+#include <matplot/matplot.h>
 #include "Perceptron.h"
 #include "Layering.h"
 #include "ActivationFunction.h"
@@ -14,7 +16,7 @@ namespace lantern {
     private:
         uint32_t layer = 0, batch_size = 3;
         std::atomic<uint32_t> epoch = 100;
-        double max_treshold = 1e-04;
+        double max_treshold = 1e-07;
 
         Optimizer optimizer;
 
@@ -23,32 +25,59 @@ namespace lantern {
         lantern::utility::Vector<lantern::utility::Vector<lantern::perceptron::Perceptron>> layer_hiddens;
         lantern::utility::Vector<lantern::perceptron::Perceptron> layer_outputs;
 
-        #ifdef MATRIX_OPTIMIZE
+        
         lantern::utility::Vector<af::array> batch_gradient;
         lantern::utility::Vector<af::array> parameters;
     	lantern::utility::Vector<af::array> gradient_based_parameters;
         lantern::utility::Vector<af::array> outputs;
         lantern::utility::Vector<lantern::perceptron::Activation> operators;
-        #endif
+        
+        
 
     public:
 
+        /**
+         * @brief Set the Epoch 
+         * 
+         * @param epoch 
+         */
         void SetEpoch(const uint32_t& epoch) {
             this->epoch = epoch;
         }
 
+        /**
+         * @brief Set the Batch Size
+         * 
+         * @param batch_size 
+         */
         void SetBatchSize(const uint32_t& batch_size){
             this->batch_size = batch_size;
         }
 
+        /**
+         * @brief Set the Max Treshold, when the value of loss function was below then this,training will be stop
+         * 
+         * @param max_treshold 
+         */
         void SetMaxTreshold(const double& max_treshold){
             this->max_treshold = max_treshold;
         }
 
+        /**
+         * @brief Set the Optimizer From outside definiton
+         * 
+         * @param opt 
+         */
         void SetOptimizerFrom(Optimizer& opt){
             this->optimizer = opt;
         }
 
+        /**
+         * @brief Add input layer to network
+         * 
+         * @tparam activation 
+         * @param total_perceptron 
+         */
         template <lantern::perceptron::Activation activation>
         void AddInputLayer(uint32_t total_perceptron){
             if(this->layer == 0){
@@ -64,6 +93,12 @@ namespace lantern {
             exit(EXIT_FAILURE);
         };
 
+        /**
+         * @brief Add Hidden layer to network
+         * 
+         * @tparam activation 
+         * @param total_perceptron 
+         */
         template <lantern::perceptron::Activation activation>
         void AddHiddenLayer(uint32_t total_perceptron){
             lantern::utility::Vector<lantern::perceptron::Perceptron*> parents;
@@ -95,6 +130,12 @@ namespace lantern {
 
         };
 
+        /**
+         * @brief Add Ouput layer to network
+         * 
+         * @tparam activation 
+         * @param total_perceptron 
+         */
         template <lantern::perceptron::Activation activation>
         void AddOutputLayer(uint32_t total_perceptron){
             lantern::utility::Vector<lantern::perceptron::Perceptron*> parents;
@@ -115,6 +156,10 @@ namespace lantern {
             }
         };
 
+        /**
+         * @brief initalize model parameters
+         * 
+         */
         void InitModel(){
             uint32_t hidden_size = this->layer_hiddens.size();
             this->model_layer.SetLayer(this->layer_outputs,hidden_size + 1);
@@ -123,7 +168,7 @@ namespace lantern {
             }
             this->model_layer.SetLayer(this->layer_inputs,0);
 
-            #ifdef MATRIX_OPTIMIZE
+            
             
             lantern::perceptron::FeedForward(
                 this->model_layer, 
@@ -136,26 +181,41 @@ namespace lantern {
             );
 
             this->gradient_based_parameters.push_back(af::constant(1.0f, 1, f64));
-            #endif
+            
 
         }
 
+        /**
+         * @brief Show parameters of model such as weights and bias
+         * 
+         */
         void ShowParameters(){
             std::cout << std::string(70,'=') << '\n';
             std::cout << "Model parameters" << '\n';
             std::cout << std::string(70,'=') << '\n';
             
             uint32_t layer = 0;
-            #ifdef MATRIX_OPTIMIZE
+            
             for(auto& param: this->parameters){
                 std::cout << af::toString(("Layer "+std::to_string(layer)).c_str(),param,16,true) << '\n';
                 std::cout << std::string(70,'=') << '\n';
                 layer++;
             }
-            #endif
+            
         }
 
-        void Train(af::array& input_data, af::array& target_data){
+        /**
+         * @brief Train model using input and output data, and loss function and its derivative
+         * 
+         * @tparam LossFunctionType 
+         * @tparam DLossFunctionType 
+         * @param input_data 
+         * @param target_data 
+         * @param LossFunction 
+         * @param DerivativeLossFunction 
+         */
+        template <typename LossFunctionType = double,typename DLossFunctionType = af::array>
+        void Train(af::array& input_data, af::array& target_data, std::function<LossFunctionType(af::array&,af::array&)> LossFunction, std::function<DLossFunctionType(af::array&,af::array&)> DerivativeLossFunction){
 
             std::atomic<int32_t> iteration(0);
             std::atomic<double> loss(0);
@@ -168,7 +228,7 @@ namespace lantern {
                 std::mt19937 rg(rd());
                 std::uniform_int_distribution<> dis(0, input_data.dims(0)-1);
             
-                #ifdef MATRIX_OPTIMIZE
+                
                 uint32_t i = 0, batch_iter = 0;
                 af::array output;
                 double loss_total = 0;
@@ -184,7 +244,8 @@ namespace lantern {
                         this->outputs
                     );
 
-                    loss = lantern::perceptron::loss::SumSquaredResidual(this->outputs.back(), output);
+                    // loss = lantern::perceptron::loss::SumSquaredResidual(this->outputs.back(), output);
+                    loss = LossFunction(this->outputs.back(), output);
                     
                     if(this->batch_size == 1)
                     {
@@ -200,6 +261,16 @@ namespace lantern {
                     }
                     else
                     {
+
+                        /**
+                         * This is mini-batch computation
+                         * this will work if the number of batch was set
+                         * more than 0
+                         * 
+                         * in here we do batch normalization and other operation
+                         * which need mini-batch
+                         */
+
                         if(batch_iter % this->batch_size == 0 && batch_iter != 0){
                             
                             /**
@@ -215,10 +286,12 @@ namespace lantern {
                                 this->parameters[p].eval();
                             }
                             batch_iter = 0;
+                            loss_total = loss;
                             iteration++;
         
                         }else{
-                            this->gradient_based_parameters.back() = lantern::perceptron::loss::DerivativeSumSquaredResidual(this->outputs.back(), output);
+                            // this->gradient_based_parameters.back() = lantern::perceptron::loss::DerivativeSumSquaredResidual(this->outputs.back(), output);
+                            this->gradient_based_parameters.back() = DerivativeLossFunction(this->outputs.back(), output);
                             lantern::perceptron::CalculateGradient(
                                 this->parameters, 
                                 this->gradient_based_parameters, 
@@ -230,14 +303,14 @@ namespace lantern {
                         }
                     }
         
-                    // if(loss < this->max_treshold){
-                    //     break;
-                    // }
+                    if(loss_total < this->max_treshold && batch_iter == 0 && iteration > 0){
+                        break;
+                    }
 
                     batch_iter++;
                 }
 
-                #endif
+                
                 stop = true;
             });
 
@@ -267,6 +340,12 @@ namespace lantern {
 
         };
 
+        /**
+         * @brief Get prediciton result after training model
+         * 
+         * @param input_data 
+         * @param result 
+         */
         void Predict(af::array& input_data, lantern::utility::Vector<af::array>& result){
             for(uint32_t i = 0; i < input_data.dims(0); i++){
                 this->parameters[0] = input_data.row(i).T();
@@ -279,6 +358,14 @@ namespace lantern {
                 result.push_back(this->outputs.back());
             }
         };
+
+        /**
+         * @brief Show a graph of network
+         * 
+         */
+        void ShowGraph(){
+            // ! Draw graph of model 
+        }
 
     };
 

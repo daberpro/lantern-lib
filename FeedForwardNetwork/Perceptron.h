@@ -21,6 +21,7 @@ namespace lantern {
             RELU, // 7 
             SWISH, // 8
             LINEAR, // 9
+            TANH, // 10
         };
         
         class Perceptron {
@@ -37,8 +38,6 @@ namespace lantern {
              * this for all optimize except GradientDescent 
              */
             lantern::utility::Vector<double> gradient, gradient_based_input;
-            lantern::utility::Vector<double> vector_velocity;
-            lantern::utility::Vector<double> stack_prev_gradient;
             uint32_t layer = 0;
             double value = 0;
             
@@ -55,45 +54,11 @@ namespace lantern {
              * to track prev weight
              * 
              */
-            uint32_t total_gradient_size = 0, prev_child_index = 0;
+            int32_t total_gradient_size = 0, prev_child_index = 0;
             Activation op = Activation::NOTHING;
             lantern::utility::Vector<Perceptron*> parents;
             lantern::utility::Vector<uint32_t> child_index;
 
-            /**
-             * @brief Get previous params init status
-             * 
-             * @return true 
-             * @return false 
-             */
-            bool IsPrevParamsInit() const;
-            /**
-             * @brief Set the previous Params Init status
-             * 
-             * @param is_init 
-             */
-            void SetPrevParamsInit(bool&& is_init);
-
-            /**
-             * @brief Get Vector velocity init status
-             * 
-             * @return true 
-             * @return false 
-             */
-            bool IsVectorVelocityInit() const;
-            /**
-             * @brief Set the Vector Velocity Init status
-             * 
-             * @param is_init 
-             */
-            void SetVectorVelocityInit(bool&& is_init);
-            /**
-             * @brief Return current status of gradient inside node
-             * is gradient already initialize or not
-             * 
-             * @return true 
-             * @return false 
-             */
             bool IsGradientInit() const;
             /**
              * @brief Set the Gradient Init Perceptron

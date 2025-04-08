@@ -15,70 +15,6 @@ namespace lantern
     namespace perceptron
     {
 
-        #ifdef OPTIMIZE_VERSION 
-        void PerceptronUpdateCalculation(
-            Perceptron *node
-        ){
-            /**
-             * return void if the current node just a single node
-             * or an independen node
-             */
-            if (node->parents.empty() || node->op == Activation::NOTHING)
-            {
-                return;
-            }
-
-            double value = 0.0;
-            Perceptron* parent = nullptr;
-            uint32_t i = 0;
-            for (; i < node->parents.size(); i++)
-            {
-                parent = node->parents[i];
-                value += parent->value * parent->gradient[node->child_index[i]];    
-            }
-            /**
-             * add bias to the sum product of weight and input
-             */
-            value += node->gradient[(node->total_gradient_size == 0? 1 : node->total_gradient_size)];
-            
-            
-            /**
-             * do activation function which feed
-             * with sumproduct of weight with input and addition with bias
-             */
-            switch (node->op)
-            {
-            case Activation::NATURAL_LOG:
-                node->value = log(value);
-                break;
-            case Activation::EXP:
-                node->value = exp(value);
-                break;
-            case Activation::SIN:
-                node->value = sin(value);
-                break;
-            case Activation::COS:
-                node->value = cos(value);
-                break;
-            case Activation::TAN:
-                node->value = tan(value);
-                break;
-            case Activation::SIGMOID:
-                node->value = 1.0 / (1.0 + exp(-value));
-                break;
-            case Activation::RELU:
-                node->value = max(value,0);
-                break;
-            case Activation::SWISH:
-                node->value = value * (1.0 / (1.0 + exp(-value)));
-                break;
-            case Activation::LINEAR:
-                node->value = value;
-                break;
-            }
-        }
-        #endif
-        #ifdef MATRIX_OPTIMIZE
         void PerceptronUpdateCalculation(
             lantern::utility::Vector<af::array>& parameters,
             lantern::utility::Vector<lantern::perceptron::Activation>& operators,
@@ -106,7 +42,7 @@ namespace lantern
                     result.eval();
                     break;
                 case Activation::RELU:
-                    
+                    result(af::where(result < 0)) = 0;
                     break;
                 case Activation::SWISH:
                     result = result * (1 / ( 1 + af::exp(-result)));
@@ -114,6 +50,7 @@ namespace lantern
                     break;
                 case Activation::LINEAR:
                     // do nothing
+                    // because the activation function is f(x) = x
                     break;
                 }
                 inputs = result;
@@ -121,38 +58,17 @@ namespace lantern
             }
             
         }
-        #endif
-
+        
         /**
          * @brief Feed forward after init
          * 
          */
         void FeedForward(
-            #ifdef OPTIMIZE_VERSION
-            lantern::utility::Vector<Perceptron *> &fix_position_node // get fix position node from prev feed forward
-            #endif
-            #ifdef MATRIX_OPTIMIZE
-            lantern::utility::Vector<af::array> &parameters // a container which containt weights and bias
-            ,lantern::utility::Vector<lantern::perceptron::Activation> &operators // a container which contain activation between layers
-            ,lantern::utility::Vector<af::array> &outputs // a container which contain outputs of previous feed forward
-            #endif
+            lantern::utility::Vector<af::array> &parameters, // a container which containt weights and bias
+            lantern::utility::Vector<lantern::perceptron::Activation> &operators, // a container which contain activation between layers
+            lantern::utility::Vector<af::array> &outputs // a container which contain outputs of previous feed forward
         )
         {
-            #ifdef OPTIMIZE_VERSION
-            /**
-             * update calculation of each node
-             * in layer for optimize_version 
-             */
-            Perceptron *current_node = nullptr;
-            for (int32_t i = fix_position_node.size() - 1; i >= 0;)
-            {
-                current_node = fix_position_node[i];
-                PerceptronUpdateCalculation(current_node);
-                --i;
-            }
-            #endif
-
-            #ifdef MATRIX_OPTIMIZE
             /**
              * update calculation of each layer
              * for matrix_optimize
@@ -166,26 +82,21 @@ namespace lantern
                 operators,
                 outputs
             );
-            #endif
         }
 
-        #ifdef MATRIX_OPTIMIZE
         template <typename Optimizer>
-        #endif
         /**
          * @brief Feed forward init
          * 
          */
         void FeedForward(
-            lantern::perceptron::Layer& model_layer // get layer of model
-            #ifdef MATRIX_OPTIMIZE
-            ,lantern::utility::Vector<af::array> &parameters // a container to save parameters from model such as weight and bias
-            ,lantern::utility::Vector<af::array> &gradient_based_parameters // a container to save gradient for computing 
-            ,lantern::utility::Vector<lantern::perceptron::Activation> &operators // a container to save activation function between layer
-            ,lantern::utility::Vector<af::array> &outputs // a container to save outpus from feed forward
-            ,Optimizer& opt // optimizer 
-            ,lantern::utility::Vector<af::array> &batch_gradient // a container to save current gradient to mini batch
-            #endif
+            lantern::perceptron::Layer& model_layer, // get layer of model
+            lantern::utility::Vector<af::array> &parameters, // a container to save parameters from model such as weight and bias
+            lantern::utility::Vector<af::array> &gradient_based_parameters, // a container to save gradient for computing 
+            lantern::utility::Vector<lantern::perceptron::Activation> &operators, // a container to save activation function between layer
+            lantern::utility::Vector<af::array> &outputs, // a container to save outpus from feed forward
+            Optimizer& opt, // optimizer 
+            lantern::utility::Vector<af::array> &batch_gradient // a container to save current gradient to mini batch
         )
         {
 
@@ -196,14 +107,12 @@ namespace lantern
             lantern::utility::Vector<Perceptron*> fix_position_node = model_layer.GetNode();
             lantern::perceptron::Perceptron *current_node = nullptr;
             
-            #ifdef MATRIX_OPTIMIZE
             uint32_t layer = 0;
             af::array temp_weight, temp_weight_gradient_based_input, vec_vel, stack_prev_grad;
 
             lantern::utility::Vector<double> inputs;
             lantern::utility::Vector<lantern::utility::Vector<double>> gradients,vector_velocity, stack_previous_gradient;
-            #endif
-
+            
             for (int32_t i = fix_position_node.size() - 1; i >= 0;)
             {
                 current_node = fix_position_node[i];
@@ -218,40 +127,28 @@ namespace lantern
                      * 
                      */
                     
-                    #ifdef OPTIMIZE_VERSION
                     if(!current_node->IsGradientInit()){
-                        current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 0.0f, 1.0f));
-                        current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(max(current_node->total_gradient_size + (current_node->op == Activation::NOTHING? 0 : (current_node->total_gradient_size == 0? 2 : 1)), 1), 1.0f));
-                        
-                        if(current_node->op != Activation::NOTHING){
-                            current_node->gradient[current_node->total_gradient_size] = 0.0f;
-                            current_node->gradient_based_input[current_node->total_gradient_size] = 0.0f;
-                        }
-
-                        current_node->SetGradientInit(true);
-                    }
-                    #endif
-
-                    #ifdef MATRIX_OPTIMIZE
-                    if(!current_node->IsGradientInit()){
-                        current_node->gradient = std::move(lantern::utility::GenerateRandomNormalDVector<double>(current_node->parents.size() + 1, 0.0f, 1.0f));
+                        /**
+                         * initalize weights using Xavier Glorot method
+                         * which use to scale of acivations function and gradient
+                         * with formula W_ij ~ N(0,sqrt(2/(num_in,num_out)))
+                         */
+                        current_node->gradient = std::move(
+                            lantern::utility::GenerateRandomNormalDVector<double>(
+                                current_node->parents.size() + 1, 
+                                0.0f,
+                                sqrt((double)2.0 /(model_layer.GetTotalNodeOnLayer(current_node->layer == 0? 0: current_node->layer - 1) + current_node->parents.size()))
+                            )
+                        );
                         current_node->gradient_based_input = std::move(lantern::utility::Vector<double>(current_node->parents.size(), 1.0f));
-                        
-                        current_node->vector_velocity = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
-                        current_node->stack_prev_gradient = std::move(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
-                        
                         current_node->SetGradientInit(true);
-                        current_node->SetVectorVelocityInit(true);
-                        current_node->SetPrevParamsInit(true);
                     }
 
                     if(current_node->op != Activation::NOTHING){
                         current_node->gradient[current_node->parents.size()] = 0.0f;
                     }
-                    #endif
-
                     
-                    #ifdef MATRIX_OPTIMIZE
+                    
                     
                     /**
                      * check if the current layer was input layer
@@ -282,8 +179,8 @@ namespace lantern
 
                         gradients.push_back(current_node->gradient);
                         gradients.push_back(current_node->gradient_based_input);
-                        vector_velocity.push_back(current_node->vector_velocity);
-                        stack_previous_gradient.push_back(current_node->stack_prev_gradient);
+                        vector_velocity.push_back(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
+                        stack_previous_gradient.push_back(lantern::utility::Vector<double>(current_node->parents.size() + 1, 0.0f));
 
                         if(layer != current_node->layer){
                             layer = current_node->layer;
@@ -345,25 +242,11 @@ namespace lantern
                         } 
                     }
                     
-                    #endif
                 }
-
-                #ifdef OPTIMIZE_VERSION
-                PerceptronUpdateCalculation(
-                    current_node
-                );
-                #endif
 
                 --i;
             }
-
             
-            #ifdef OPTIMIZE_VERSION
-            fix_position_node[0]->gradient[0] = 1.0f;
-            fix_position_node[0]->gradient[1] = 0.0f;
-            #endif
-            
-            #ifdef MATRIX_OPTIMIZE
             parameters.push_back(temp_weight);
             gradient_based_parameters.push_back(temp_weight_gradient_based_input);
             opt.vector_velocity.push_back(vec_vel);
@@ -377,33 +260,7 @@ namespace lantern
                 operators,
                 outputs
             );
-            #endif
-
-            /**
-             * ! THIS ONLY FOR DEBUGGING
-             */
-            // std::cout << "All parameters : \n";
-            // for(auto& g : gradients){
-            //     std::cout << g << "\n";
-            // }
-            // std::cout << std::string(50,'=') << "\n";
-            // std::cout << "input and weights : \n";
-            // uint32_t j = 0;
-            // for(auto& p : parameters){
-            //     if(j != 0){
-            //         af_print(p.T());
-            //     }else{
-            //         af_print(p);
-            //     }
-            //     ++j;
-            // }
-            // std::cout << std::string(50,'=') << "\n";
-            // std::cout << "gradient based input : \n";
-            // for(auto& gbp : gradient_based_parameters){
-            //     std::cout << gbp << "\n";
-            // }
-            // std::cout << std::string(50,'=') << "\n";
-
+            
         };
 
 

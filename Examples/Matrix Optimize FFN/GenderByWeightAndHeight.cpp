@@ -1,5 +1,4 @@
 #include "../../pch.h"
-#define MATRIX_OPTIMIZE
 #include "../../Headers/Vector.h"
 #include "../../FeedForwardNetwork/FeedForwardNetwork.h"
 

@@ -7,7 +7,6 @@ namespace lantern {
         
         namespace loss {
 
-            #ifdef MATRIX_OPTIMIZE
             /**
              * @brief Sum Squared Residual Error
              * 
@@ -29,7 +28,6 @@ namespace lantern {
             af::array DerivativeSumSquaredResidual(af::array& output, af::array& target){
                 return -2 * (target - output);
             };
-            #endif
 
         }
     }

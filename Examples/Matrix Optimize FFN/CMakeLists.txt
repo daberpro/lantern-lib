@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.31)
 project(MatrixOptimizeFFN)
 
 add_executable(XOR_Matrix_Optimizer XOR.cpp)
+target_include_directories(XOR_Matrix_Optimizer PUBLIC ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source)
+target_link_libraries(XOR_Matrix_Optimizer PRIVATE ArrayFire::afcpu AutoGradient FeedForwardNetwork matplot)
+
 add_executable(GenderByWeightAndHeight GenderByWeightAndHeight.cpp)
-target_link_libraries(XOR_Matrix_Optimizer PRIVATE ArrayFire::afcpu AutoGradient FeedForwardNetwork)
-target_link_libraries(GenderByWeightAndHeight PRIVATE ArrayFire::afcpu AutoGradient FeedForwardNetwork)
+target_include_directories(GenderByWeightAndHeight PUBLIC ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source)
+target_link_libraries(GenderByWeightAndHeight PRIVATE ArrayFire::afcpu AutoGradient FeedForwardNetwork matplot)
