@@ -10,10 +10,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Install wget
-        run: |
-          choco install wget
-          
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1    
+      
       - name: Clone ArrayFire
         run: |
           git clone --recursive https://github.com/arrayfire/arrayfire.git
