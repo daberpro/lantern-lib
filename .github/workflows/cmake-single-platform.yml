@@ -12,7 +12,10 @@ jobs:
       - name: Install wget
         run: |
           choco install wget
+        working-directory: ${{ github.workspace }}
       - name: Get and install arrayfire
+        shell: cmd
         run: |
           wget https://arrayfire.gateway.scarf.sh/windows/3.9.0/ArrayFire.exe
           ArrayFire.exe
+        working-directory: ${{ github.workspace }}
