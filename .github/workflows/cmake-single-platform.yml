@@ -42,7 +42,7 @@ jobs:
         cd build
         cmake .. -G Ninja
         
-    - name: Setup config for Lantern
+    - name: Build Lantern
       run: |
         cd build
         ninja
