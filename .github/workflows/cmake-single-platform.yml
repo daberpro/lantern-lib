@@ -13,23 +13,21 @@ jobs:
       - name: Install wget
         run: |
           choco install wget
-
-      - name: Install VCPKG
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          dir
-          cd vcpkg && bootstrap-vcpkg.bat
-        working-directory: ${{ github.workspace }}
           
-      - name: Get and install arrayfire
-        shell: cmd
+      - name: Clone ArrayFire
         run: |
-          set VCPKG_ROOT=${{ github.workspace }}\vcpkg
-          set PATH=%VCPKG_ROOT%;%PATH%
-          wget https://github.com/arrayfire/arrayfire/archive/refs/tags/v3.9.0.zip
-          tar -xf v3.9.0.zip
-          cd v3.9.0/arrayfire-3.9.0
+          git clone --recursive https://github.com/arrayfire/arrayfire.git
+          cd arrayfire
+          git submodule update --init --recursive
+  
+      - name: Configure ArrayFire with CMake
+        run: |
           mkdir build
           cd build
-          cmake -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake ..
-        working-directory: ${{ github.workspace }}
+          cmake .. -G "Ninja" -DAF_BUILD_CPU=ON -DAF_BUILD_UNIFIED=ON -DAF_BUILD_EXAMPLES=OFF -DAF_BUILD_TESTS=OFF
+  
+      - name: Build ArrayFire
+        run: |
+          cd arrayfire/build
+          cmake --build . --config Release
+  
