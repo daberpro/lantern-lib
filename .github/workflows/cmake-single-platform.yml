@@ -35,3 +35,14 @@ jobs:
       run: |
         cd arrayfire/build
         ninja install
+
+    - name: Setup config for Lantern
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G Ninja
+        
+    - name: Setup config for Lantern
+      run: |
+        cd build
+        ninja
