@@ -8,14 +8,19 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Install wget
+        uses: actions/checkout@v4
+        
+      - name: Install VCPKG and wget
         run: |
-          choco install wget
-        working-directory: ${{ github.workspace }}
+          choco install vcpkg wget unzip
+          
       - name: Get and install arrayfire
         shell: cmd
         run: |
-          wget https://arrayfire.gateway.scarf.sh/windows/3.9.0/ArrayFire.exe
-          ArrayFire.exe
+          wget https://github.com/arrayfire/arrayfire/archive/refs/tags/v3.9.0.zip
+          tar -xf v3.9.0.zip
+          cd v3.9.0/arrayfire-3.9.0
+          mkdir build
+          cd build
+          cmake -DCMAKE_TOOLCHAIN_FILE="C:/ProgramData/chocolatey/lib/vcpkg/tools/vcpkg/scripts/buildsystems/vcpkg.cmake" ..
         working-directory: ${{ github.workspace }}
