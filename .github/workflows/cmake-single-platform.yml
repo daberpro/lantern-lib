@@ -10,36 +10,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Visual Studio Build Tools
-        uses: microsoft/setup-msbuild@v1
-
-      - name: Install Dependencies (CMake, Visual Studio Build Tools)
-        run: |
-          choco install cmake visualstudio2019buildtools
-
-      - name: Clone and Build ArrayFire from Source
-        run: |
-          git clone --recursive https://github.com/arrayfire/arrayfire.git
-          cd arrayfire
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX="D:/arrayfire" -G "Visual Studio 16 2019"
-          cmake --build . --config Release
-          cmake --install . --prefix "D:/arrayfire"
-
-      - name: Set up Environment Variables for ArrayFire
-        run: |
-          echo "ARRAYFIRE_DIR=D:/arrayfire" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=D:/arrayfire;$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
-
       - name: Build Lantern Project
         run: |
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_PREFIX_PATH=${{ env.CMAKE_PREFIX_PATH }}
-          cmake --build . --config Release
-
-      - name: Run Tests (if any)
-        run: |
-          # Add testing commands if you have unit tests
-          # e.g., ctest --output-on-failure
+          wget https://arrayfire.gateway.scarf.sh/windows/3.9.0/ArrayFire.exe
+          ArrayFire.exe
