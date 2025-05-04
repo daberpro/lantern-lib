@@ -24,12 +24,12 @@ jobs:
       - name: Get and install arrayfire
         shell: cmd
         run: |
-          set VCPKG_ROOT=${{ github.workspace }}/vcpkg
+          set VCPKG_ROOT=${{ github.workspace }}\vcpkg
           set PATH=%VCPKG_ROOT%;%PATH%
           wget https://github.com/arrayfire/arrayfire/archive/refs/tags/v3.9.0.zip
           tar -xf v3.9.0.zip
           cd v3.9.0/arrayfire-3.9.0
           mkdir build
           cd build
-          cmake -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/scripts/buildsystems/vcpkg.cmake" ..
+          cmake -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake ..
         working-directory: ${{ github.workspace }}
