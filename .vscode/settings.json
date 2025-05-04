@@ -76,7 +76,10 @@
         "algorithm": "cpp",
         "chrono": "cpp",
         "forward_list": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "array": "cpp",
+        "fstream": "cpp",
+        "numeric": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

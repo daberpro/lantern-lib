@@ -20,7 +20,7 @@ namespace lantern {
                  * 
                  * @param learning_rate 
                  */
-                GradientDescent(double learning_rate): learning_rate(learning_rate) {}
+                GradientDescent(double learning_rate = 0.01f): learning_rate(learning_rate) {}
                 /**
                  * @brief Get the Optimize result of gradient
                  * 

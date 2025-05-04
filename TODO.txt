@@ -1,0 +1,3 @@
+1. get all gradient using calculate gradient on FeedForwardNetwork.h line 489 until 522
+2. delete softmax on backpropagation cause it already define in FeedForwardNetwork
+3. 

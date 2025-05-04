@@ -13,3 +13,6 @@
 #include <thread>
 #include <algorithm>
 #include <functional>
+#include <typeinfo>
+#include <span>
+#include <ctime>

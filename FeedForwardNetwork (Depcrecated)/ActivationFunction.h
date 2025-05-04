@@ -120,6 +120,20 @@ namespace lantern
             };
 
             /**
+             * @brief SoftMax Activation Function
+             * 
+             * @tparam Args 
+             * @param n 
+             * @param args 
+             */
+            template <typename... Args>
+            void SoftMax(Perceptron &n, Args &...args)
+            {
+                n.op = Activation::SOFTMAX;
+                ((n.child_index.push_back(args.total_gradient_size++), n.parents.push_back(&args)), ...);
+            };
+
+            /**
              * @brief Linear Activation Function
              * 
              * @tparam Args 

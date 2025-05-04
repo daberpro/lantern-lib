@@ -22,6 +22,7 @@ namespace lantern {
             SWISH, // 8
             LINEAR, // 9
             TANH, // 10
+            SOFTMAX // 11
         };
         
         class Perceptron {
@@ -87,3 +88,5 @@ namespace lantern {
     }
 
 }
+
+std::ostream& operator <<(std::ostream& os, lantern::perceptron::Activation& op);

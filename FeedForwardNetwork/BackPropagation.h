@@ -1,98 +1,73 @@
 #pragma once
-#include "Perceptron.h"
-// already define in Perceptron.h
-// #include "../Headers/Vector.h"
-#include <Optimizer/GradientDescent.h>
-#include <Optimizer/AdaptiveMomentEstimation.h>
-#include <Optimizer/RootMeanSquaredPropagation.h>
-#include <Optimizer/StochasticGradientDescentWithMomentum.h>
-#include <Optimizer/AdaptiveGradientDescent.h>
-#include "../Headers/SymbolDerivative.h"
+#include "../pch.h"
+#include "Function.h"
+#include "Layering.h"
+#include "Node.h"
 
-static af::array broad_mult(af::array &lhs, af::array &rhs){
-	return lhs * rhs;
-}
+namespace lantern{
 
-namespace lantern {
-    namespace perceptron {
+    namespace backprop {
 
-        /**
-         * @brief Backpropagation for model
-         * 
-         * @tparam Optimizer 
-         * @param parameters 
-         * @param gradient_based_parameters 
-         * @param operators 
-         * @param outputs 
-         * @param opt 
-         */
         template <typename Optimizer>
-        void BackPropagation(
-            lantern::utility::Vector<af::array>& parameters,
-            lantern::utility::Vector<af::array>& gradient_based_parameters,
-            lantern::utility::Vector<lantern::perceptron::Activation>& operators,
-            lantern::utility::Vector<af::array>& outputs,
-            Optimizer& opt
+        void Backpropagate(
+            lantern::layer::Layer& _layer,
+            lantern::utility::Vector<af::array>& _parameters,
+            lantern::utility::Vector<af::array>& _prev_gradient,
+            lantern::utility::Vector<af::array>& _outputs,
+            Optimizer& optimizer
         ){
 
-            af::array gradient,gradient_weight, gradient_bias, all_gradient;
+            lantern::utility::Vector<uint32_t> all_layer_sizes = _layer.GetAllLayerSizes();
+            lantern::utility::Vector<lantern::node::NodeType> all_layer_type = _layer.GetAllNodeTypeOfLayer();
+            af::array output, prev_output, gradient, gradient_weight, gradient_bias, all_gradient;
 
-            for(int32_t i = parameters.size() - 1; i > 0; i--){
+            for(uint32_t current_layer = all_layer_sizes.size() - 1; current_layer > 0; current_layer--){
                 
-                af::array& parameter = parameters[i];
-                af::array& output = outputs[i], prev_output = outputs[i-1];
-                af::array& gradient_based_parameter = gradient_based_parameters[i + 1];
-                lantern::perceptron::Activation& op = operators[i - 1];
+                prev_output = _outputs[current_layer];
+                output = _outputs[current_layer - 1];
+                af::array& parameters = _parameters[current_layer - 1];
 
-                switch (op)
-                {
-                case Activation::SIGMOID:
-
-                    // get gradient from current input
-                    gradient = output * ( 1 - output );
-                    gradient.eval();
-                    break;
-
-                case Activation::RELU:
-
-                    // get gradient from current input
-                    gradient = output;
-                    gradient(af::where(gradient > 0)) = 1; 
-                    break;
-
-                case Activation::SWISH:
+                switch(all_layer_type[current_layer]){
+                    case lantern::node::NodeType::LINEAR:
+                        gradient = lantern::derivative::Linear(prev_output);
                     
-                    // get gradient from current input
-                    gradient = output +  (output * ( 1 - output )) * output;
-                    gradient.eval();
                     break;
-
-                case Activation::LINEAR:
+                    case lantern::node::NodeType::SIGMOID:
+                        gradient = lantern::derivative::Sigmoid(prev_output);
                     
-                    gradient = (output / output);
-                    gradient.eval();
+                    break;
+                    case lantern::node::NodeType::RELU:
+                        // gradient = lantern::derivative::ReLU(prev_output);
+                    
+                    break;
+                    case lantern::node::NodeType::TANH:
+                        // gradient = lantern::derivative::TanH(prev_output);
+                    
+                    break;
+                    case lantern::node::NodeType::SWISH:
+                        gradient = lantern::derivative::Swish(prev_output);
+                    
                     break;
                 }
 
-                // multiply gradient with previous layer gradient
-                gradient = gradient * gradient_based_parameter;
-                // matrix multiplication with previous output
-                // with gradient because the pattern of formula
-                // in chain rule
-                gradient_weight = af::matmul(prev_output,gradient.T());
-                // because the derivative of bias is only 1
-                // then just set gradient of bias to be gradient
+                gradient *= _prev_gradient[current_layer];
+                gradient.eval();
+                gradient_weight = af::matmul(gradient,output.T());
                 gradient_bias = gradient;
-                // join weight and bias to process with current
-                // parameter
-                all_gradient = af::join(0,gradient_weight,gradient_bias.T());
-                // update parameter using optimizer
-                parameter -= opt.GetDelta(all_gradient,i);
-                parameter.eval();
 
-                // pass throught the current gradient to next layer
-                gradient_based_parameters[i] = af::matmul(
-                    parameter(af::seq(0,parameter.dims(0) - 2),af::span),
+                all_gradient = af::join(
+                    1,
+                    gradient_weight,
+                    gradient_bias
+                );
+
+                uint32_t opt_index = current_layer - 1;
+                af::array delta = optimizer.GetDelta(all_gradient,opt_index);
+                parameters -= delta;
+                parameters.eval();
+                
+                _prev_gradient[current_layer - 1] = af::matmul(
+                    parameters(af::span,af::seq(parameters.dims(1) - 1)).T(),
                     gradient
                 );
 
@@ -100,96 +75,6 @@ namespace lantern {
 
         }
 
-        /**
-         * @brief Calculate gradient for each layer and save it into batch_gradient
-         * 
-         * @tparam Optimizer 
-         * @param parameters 
-         * @param gradient_based_parameters 
-         * @param operators 
-         * @param outputs 
-         * @param opt 
-         * @param batch_gradient 
-         */
-        template <typename Optimizer>
-        void CalculateGradient(
-            lantern::utility::Vector<af::array>& parameters,
-            lantern::utility::Vector<af::array>& gradient_based_parameters,
-            lantern::utility::Vector<lantern::perceptron::Activation>& operators,
-            lantern::utility::Vector<af::array>& outputs,
-            Optimizer& opt,
-            lantern::utility::Vector<af::array>& batch_gradient
-        ){
-
-            af::array gradient,gradient_weight, gradient_bias, all_gradient;
-
-            for(int32_t i = parameters.size() - 1; i > 0; i--){
-                
-                af::array& parameter = parameters[i];
-                af::array& output = outputs[i], prev_output = outputs[i-1];
-                af::array& gradient_based_parameter = gradient_based_parameters[i + 1];
-                lantern::perceptron::Activation& op = operators[i - 1];
-
-                switch (op)
-                {
-                case Activation::SIGMOID:
-
-                    // get gradient from current input
-                    gradient = output * ( 1 - output );
-                    gradient.eval();
-                    break;
-
-                case Activation::RELU:
-
-                    // get gradient from current input
-                    gradient = output;
-                    gradient(af::where(gradient > 0)) = 1; 
-                    break;
-
-                case Activation::SWISH:
-                    
-                    // get gradient from current input
-                    gradient = output +  (output * ( 1 - output )) * output;
-                    gradient.eval();
-                    break;
-
-                case Activation::LINEAR:
-                    
-                    gradient = (output / output);
-                    gradient.eval();
-                    break;
-
-                }
-
-                // multiply gradient with previous layer gradient
-                gradient = gradient * gradient_based_parameter;
-                // matrix multiplication with previous output
-                // with gradient because the pattern of formula
-                // in chain rule
-                gradient_weight = af::matmul(prev_output,gradient.T());
-                // because the derivative of bias is only 1
-                // then just set gradient of bias to be gradient
-                gradient_bias = gradient;
-                // join weight and bias to process with current
-                // parameter
-                all_gradient = af::join(0,gradient_weight,gradient_bias.T());
-                batch_gradient[i] += all_gradient;
-                batch_gradient[i].eval();
-                
-                // DO NOT update parameter using optimizer
-                // parameter -= opt.GetDelta(all_gradient,i);
-                // parameter.eval();
-
-                // pass throught the current gradient to next layer
-                gradient_based_parameters[i] = af::matmul(
-                    parameter(af::seq(0,parameter.dims(0) - 2),af::span),
-                    gradient
-                );
-
-            }
-
-        }
-        
     }
-}
 
+}

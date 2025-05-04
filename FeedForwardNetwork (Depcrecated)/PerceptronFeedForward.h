@@ -26,14 +26,25 @@ namespace lantern
             // push the input for calculate in backpropagation
             // because the input's need to calculate gradient
             outputs.push_back(inputs);
-            af::array result;
+            af::array result, exp_of_result;
 
             for(uint32_t i = 1; i < parameters.size(); ++i){
                 
                 param = parameters[i].T();
-                result = af::matmul(param(af::span,af::seq(0,param.dims(1) - 2)),inputs);
-                result += param.col(param.dims(1) - 1);
-                result.eval();
+                
+                /**
+                 * if the current activation function is not softmax
+                 * then just feed the node with input without using
+                 * any weights and bias
+                 * 
+                 */
+                if(operators[i-1] != Activation::SOFTMAX){
+                    result = af::matmul(param(af::span,af::seq(0,param.dims(1) - 2)),inputs);
+                    result += param.col(param.dims(1) - 1);
+                    result.eval();
+                }else{
+                    result = inputs;
+                }
                 
                 switch (operators[i - 1])
                 {
@@ -46,6 +57,11 @@ namespace lantern
                     break;
                 case Activation::SWISH:
                     result = result * (1 / ( 1 + af::exp(-result)));
+                    result.eval();
+                    break;
+                case Activation::SOFTMAX:
+                    exp_of_result = af::exp(result - af::max(result));
+                    result = exp_of_result / af::sum(exp_of_result);
                     result.eval();
                     break;
                 case Activation::LINEAR:

@@ -1,12 +1,12 @@
-#include "pch.h"
-#include "Headers/Logging.h"
-#include "FeedForwardNetwork/FeedForwardNetwork.h"
+#include "../pch.h"
+#include "../Headers/Logging.h"
+#include "../FeedForwardNetwork/FeedForwardNetwork.h"
 
 int main(){
 
 	af::info();
 	std::cout << "\n\n";
-	af::setSeed(static_cast<unsigned long long>(std::time(nullptr)));
+	af::setSeed(static_cast<uint64_t>(std::time(nullptr)));
 
 	lantern::layer::Layer layer;
 	layer.Add<lantern::node::NodeType::NOTHING>(2); // layer 0 (Input)

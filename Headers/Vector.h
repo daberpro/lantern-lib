@@ -302,10 +302,7 @@ namespace lantern {
             }
 
             ~Vector(){
-                for (uint32_t i = 0; i < this->m_size; i++) {
-                    this->data[i].~T();
-                }
-                ::operator delete[](this->data);
+                this->clear();
             }
 
             /**
