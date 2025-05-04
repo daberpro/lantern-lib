@@ -10,9 +10,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Install VCPKG and wget
+      - name: Install wget
         run: |
-          choco install vcpkg wget unzip
+          choco install wget vcpkg --y
           
       - name: Get and install arrayfire
         shell: cmd
