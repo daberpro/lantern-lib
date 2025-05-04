@@ -3,30 +3,35 @@ name: CI for Lantern Project with ArrayFire on Windows
 on: [push, pull_request]
 
 jobs:
-  build:
+  build-arrayfire:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Set up MSVC environment
-        uses: ilammy/msvc-dev-cmd@v1    
+    - name: Checkout Repository
+      uses: actions/checkout@v4
       
-      - name: Clone ArrayFire
-        run: |
-          git clone --recursive https://github.com/arrayfire/arrayfire.git
-          cd arrayfire
-          git submodule update --init --recursive
-  
-      - name: Configure ArrayFire with CMake
-        run: |
-          mkdir build
-          cd build
-          cmake .. -G "Ninja" -DAF_BUILD_CPU=ON -DAF_BUILD_UNIFIED=ON -DAF_BUILD_EXAMPLES=OFF -DAF_BUILD_TESTS=OFF
-  
-      - name: Build ArrayFire
-        run: |
-          cd arrayfire/build
-          cmake --build . --config Release
-  
+    - name: Set up MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Clone ArrayFire
+      run: |
+        git clone --recursive https://github.com/arrayfire/arrayfire.git
+        cd arrayfire
+        git submodule update --init --recursive
+
+    - name: Configure ArrayFire with CMake (CPU backend only)
+      run: |
+        cd arrayfire
+        mkdir build
+        cd build
+        cmake .. -G Ninja -DAF_BUILD_CPU=ON -DAF_BUILD_UNIFIED=ON -DAF_BUILD_EXAMPLES=OFF -DAF_BUILD_TESTS=OFF
+
+    - name: Build ArrayFire
+      run: |
+        cd arrayfire/build
+        ninja
+
+    - name: Install ArrayFire
+      run: |
+        cd arrayfire/build
+        ninja install
