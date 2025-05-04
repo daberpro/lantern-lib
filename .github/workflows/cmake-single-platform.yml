@@ -1,102 +1,45 @@
-name: CMake with MSVC
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+name: CI for Lantern Project with ArrayFire on Windows
 
-env:
-  BUILD_TYPE: Release
-  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # ----------------------------------------------
-    # Cache vcpkg and Installed Dependencies
-    # ----------------------------------------------
-    - name: Cache vcpkg and installed dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ github.workspace }}/vcpkg
-          ${{ github.workspace }}/vcpkg_installed
-          C:/Users/runneradmin/AppData/Local/vcpkg
-        key: vcpkg-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt') }}
-        restore-keys: |
-          vcpkg-${{ runner.os }}-
+      - name: Set up Visual Studio Build Tools
+        uses: microsoft/setup-msbuild@v1
 
-    # ----------------------------------------------
-    # Install vcpkg and Dependencies (if not cached)
-    # ----------------------------------------------
-    - name: Install vcpkg and dependencies
-      shell: cmd
-      run: |
-        if not exist vcpkg (
-          git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg && bootstrap-vcpkg.bat
-        )
-        set PATH=%VCPKG_ROOT%;%PATH%
-        vcpkg install freeimage openblas fftw3 --triplet x64-windows
+      - name: Install Dependencies (CMake, Visual Studio Build Tools)
+        run: |
+          choco install cmake visualstudio2019buildtools
 
-    # Debug vcpkg cache
-    - name: Debug vcpkg cache
-      shell: cmd
-      continue-on-error: true
-      run: |
-        if exist C:\Users\runneradmin\AppData\Local\vcpkg\archives (
-          dir C:\Users\runneradmin\AppData\Local\vcpkg\archives
-        ) else (
-          echo "Cache directory does not exist."
-        )
+      - name: Clone and Build ArrayFire from Source
+        run: |
+          git clone --recursive https://github.com/arrayfire/arrayfire.git
+          cd arrayfire
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX="D:/arrayfire" -G "Visual Studio 16 2019"
+          cmake --build . --config Release
+          cmake --install . --prefix "D:/arrayfire"
 
-    # ----------------------------------------------
-    # Cache ArrayFire Build
-    # ----------------------------------------------
-    - name: Cache ArrayFire build
-      uses: actions/cache@v3
-      with:
-        path: ${{ github.workspace }}/arrayfire/build
-        key: arrayfire-${{ runner.os }}-${{ hashFiles('arrayfire/CMakeLists.txt') }}
-        restore-keys: |
-          arrayfire-${{ runner.os }}-
+      - name: Set up Environment Variables for ArrayFire
+        run: |
+          echo "ARRAYFIRE_DIR=D:/arrayfire" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=D:/arrayfire;$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
 
-    # ----------------------------------------------
-    # Build ArrayFire (if not cached)
-    # ----------------------------------------------
-    - name: Build ArrayFire
-      shell: cmd
-      run: |
-        if not exist arrayfire (
-          git clone https://github.com/arrayfire/arrayfire.git
-        )
-        cd arrayfire
-        if not exist build mkdir build
-        cd build
-        cmake -G "Visual Studio 17 2022" -A x64 ^
-          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ..
-        cmake --build . --config Release --parallel 4
-        cmake --install .
+      - name: Build Lantern Project
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_PREFIX_PATH=${{ env.CMAKE_PREFIX_PATH }}
+          cmake --build . --config Release
 
-    # Debug ArrayFire cache
-    - name: Debug ArrayFire cache
-      shell: cmd
-      run: |
-        dir /s arrayfire\build
-
-    # ----------------------------------------------
-    # Build lantern-lib
-    # ----------------------------------------------
-    - name: Build lantern-lib
-      shell: cmd
-      run: |
-        if not exist build mkdir build
-        cd build
-        cmake -G "Visual Studio 17 2022" -A x64 ^
-          -DCMAKE_TOOLCHAIN_FILE="%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake" ..
-        cmake --build . --config Release --parallel 4
+      - name: Run Tests (if any)
+        run: |
+          # Add testing commands if you have unit tests
+          # e.g., ctest --output-on-failure
