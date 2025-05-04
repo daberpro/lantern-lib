@@ -17,6 +17,7 @@ jobs:
       - name: Install VCPKG
         run: |
           git clone https://github.com/microsoft/vcpkg.git
+          dir
           cd vcpkg && bootstrap-vcpkg.bat
         working-directory: ${{ github.workspace }}
           
