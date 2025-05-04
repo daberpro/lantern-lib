@@ -9,8 +9,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Build Lantern Project
+      - name: Install wget
+        run: |
+          choco install wget
+      - name: Get and install arrayfire
         run: |
           wget https://arrayfire.gateway.scarf.sh/windows/3.9.0/ArrayFire.exe
           ArrayFire.exe
