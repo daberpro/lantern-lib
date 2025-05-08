@@ -2,6 +2,7 @@
 #include "../Headers/Logging.h"
 #include "../FeedForwardNetwork/FeedForwardNetwork.h"
 
+
 int main(){
 
 	af::info();
@@ -10,8 +11,8 @@ int main(){
 
 	lantern::layer::Layer layer;
 	layer.Add<lantern::node::NodeType::NOTHING>(2); // layer 0 (Input)
-	layer.Add<lantern::node::NodeType::SIGMOID>(3); // layer 1 (Hidden 1)
-	layer.Add<lantern::node::NodeType::SIGMOID>(4); // layer 2 (Hidden 2)
+	layer.Add<lantern::node::NodeType::SWISH>(6); // layer 1 (Hidden 1)
+	layer.Add<lantern::node::NodeType::SWISH>(4); // layer 2 (Hidden 2)
 	layer.Add<lantern::node::NodeType::SIGMOID>(1); // layer 3 (Output)
 
 	lantern::utility::Vector<af::array> outputs;
@@ -32,7 +33,7 @@ int main(){
 		outputs,
 		optimizer
 	);
-
+	
 	prev_gradient.push_back(af::array());
 
 	double loss = 0;
@@ -53,12 +54,12 @@ int main(){
 		loss = lantern::loss::SumSquareResidual(outputs.back(),selected_target);
 		std::cout << "Loss : " << loss << '\n';
 
-		if(loss <= 1e-05){
+		if(loss <= 1e-07){
 			break;
 		}
 
 		prev_gradient.back() = lantern::derivative::SumSquareResidual(outputs.back(),selected_target);
-	
+
 		lantern::backprop::Backpropagate(
 			layer,
 			parameters,

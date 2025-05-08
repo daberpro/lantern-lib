@@ -5,3 +5,6 @@
 #include "Function.h"
 #include "Backpropagation.h"
 #include "Optimizer/Optimizer.h"
+#include "Initialize.h"
+#include "Regularization.h"
+#include "DataProcessing.h"

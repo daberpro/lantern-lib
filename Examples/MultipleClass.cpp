@@ -1,6 +1,6 @@
-#include "pch.h"
-#include "Headers/Logging.h"
-#include "FeedForwardNetwork/FeedForwardNetwork.h"
+#include "../pch.h"
+#include "../Headers/Logging.h"
+#include "../FeedForwardNetwork/FeedForwardNetwork.h"
 
 int main(){
 
@@ -106,8 +106,6 @@ int main(){
 				outputs,
 				optimizer,
 				batch_size
-				// ,lantern::regularization::L1Regularization
-				// ,0.7	
 			);
 		
 		}
