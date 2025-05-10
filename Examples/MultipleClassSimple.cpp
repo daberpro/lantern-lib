@@ -1,13 +1,12 @@
-#include "pch.h"
-#include <Vector.h>
-#include <Logging.h>
-#include "FeedForwardNetwork/FeedForwardNetwork.h"
+#include "../pch.h"
+#include "../Headers/Logging.h"
+#include "../FeedForwardNetwork/FeedForwardNetwork.h"
 
-#define Activation lantern::perceptron::Activation
-#define Optimizer lantern::perceptron::optimizer
+int main(){
 
-int main()
-{
+	af::info();
+	std::cout << "\n\n";
+	af::setSeed(static_cast<uint64_t>(std::time(nullptr)));
 
 	// 45 samples × 2 features = 90 elements
 	double input_data[] = {
@@ -53,43 +52,40 @@ int main()
 
 	af::array input = af::array(45, 2, input_data);
 	af::array target = af::array(45, 3, target_data);
-	
-	lantern::FeedForwardNetwork<Optimizer::AdaptiveMomentEstimation> model;
-	model.SetEpoch(10000);
-	model.SetBatchSize(15);
-	model.SetMaxTreshold(1e-08);
-	model.SetSizeOfClassData(15,15,15);
 
-	model.AddInputLayer<Activation::NOTHING>(2);
-	model.AddHiddenLayer<Activation::SWISH>(15);
-	model.AddHiddenLayer<Activation::SWISH>(15);
-	model.AddHiddenLayer<Activation::LINEAR>(3);
-	model.AddOutputLayer<Activation::SOFTMAX>(1);
+	lantern::layer::Layer layer;
+	layer.Add<lantern::node::NodeType::NOTHING>(2);
+	layer.Add<lantern::node::NodeType::SWISH>(15);
+	layer.Add<lantern::node::NodeType::SWISH>(15);
+	layer.Add<lantern::node::NodeType::LINEAR>(3);
 
-	model.InitModel();
+	lantern::optimizer::AdaptiveMomentEstimation optimizer;
 
-	model.Train<double, af::array>(
-		input,
-		target,
-		lantern::perceptron::loss::CrossEntropy,
-		lantern::perceptron::loss::DerivativeCrossEntropy
+	lantern::feedforward::FeedForwardNetwork model;
+	model.SetInput(&input);
+	model.SetTarget(&target);
+	model.SetLayer(&layer);
+	model.SetEachClassSize({15,15,14});
+	model.SetMinimumTreshold(1e-08);
+	model.Train<
+		15,
+		lantern::optimizer::AdaptiveMomentEstimation,
+		double,
+		af::array,
+		af::array
+	>(
+		optimizer,
+		lantern::loss::CrossEntropy,
+		lantern::derivative::CrossEntropySoftMax,
+		lantern::probability::SoftMax
 	);
-	model.ShowParameters();
-	model.PrintDetail();
 
-	lantern::utility::Vector<af::array> predict_result;
-	model.Predict(
+	af::array test_results;
+	model.Predict<af::array>(
 		input,
-		predict_result
+		test_results,
+		lantern::probability::SoftMax
 	);
-	
-	std::cout << std::string(70,'=') << '\n';
-	for(uint32_t i = 0; i < input.dims(0); i++){
-		std::cout << af::toString("Input : ",input.row(i),16,true) << '\n';
-		std::cout << af::toString("Output : ",predict_result[i],16,true) << '\n';
-		std::cout << af::toString("Target : ",target.row(i),16,true) << '\n';
-		std::cout << std::string(70,'=') << '\n';
-	}
 
 	return 0;
 }
