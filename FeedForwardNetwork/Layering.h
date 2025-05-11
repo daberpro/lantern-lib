@@ -23,12 +23,12 @@ namespace lantern {
                 this->m_NodeTypeOfLayer.push_back(nodeTypeOfLayer);
             }
 
-            lantern::utility::Vector<uint32_t> GetAllLayerSizes() const {
-                return this->m_LayersSize;
+            lantern::utility::Vector<uint32_t>* GetAllLayerSizes() {
+                return &this->m_LayersSize;
             }
 
-            lantern::utility::Vector<lantern::node::NodeType> GetAllNodeTypeOfLayer() const {
-                return this->m_NodeTypeOfLayer;
+            lantern::utility::Vector<lantern::node::NodeType>* GetAllNodeTypeOfLayer() {
+                return &this->m_NodeTypeOfLayer;
             }
 
             uint32_t GetTotalNodeAtLayer(const uint32_t& _layer) const {
