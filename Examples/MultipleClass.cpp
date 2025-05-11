@@ -65,11 +65,7 @@ int main(){
 	lantern::utility::Vector<af::array> parameters;
 	lantern::utility::Vector<af::array> prev_gradient;
 	lantern::utility::Vector<af::array> outputs;
-<<<<<<< HEAD
 	lantern::optimizer::AdaptiveMomentEstimation optimizer;
-=======
-	lantern::optimizer::AdaptiveGradientDescent optimizer;
->>>>>>> 992cc9276e65bff7d6fb8603d03962aa3937c710
 
 	lantern::feedforward::Initialize(
 		layer,
@@ -110,11 +106,8 @@ int main(){
 				outputs,
 				optimizer,
 				batch_size
-<<<<<<< HEAD
 				// ,lantern::regularization::L1Regularization
 				// ,0.7	
-=======
->>>>>>> 992cc9276e65bff7d6fb8603d03962aa3937c710
 			);
 		
 		}
