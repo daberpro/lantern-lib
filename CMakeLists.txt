@@ -3,7 +3,7 @@ project(lantern CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_PREFIX_PATH "D:/module2;D:/v3")
+set(CMAKE_PREFIX_PATH "D:/module/v3")
 
 find_package(ArrayFire REQUIRED)
 
@@ -20,5 +20,5 @@ target_include_directories(
     ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source
 )
 # target_link_libraries(${PROJECT_NAME} PUBLIC AutoGradient FeedForwardNetwork ArrayFire::afcpu matplot)
-target_link_libraries(${PROJECT_NAME} PUBLIC AutoGradient ArrayFire::afcpu matplot)
+target_link_libraries(${PROJECT_NAME} PUBLIC AutoGradient ArrayFire::afcuda matplot)
 target_precompile_headers(${PROJECT_NAME} PUBLIC pch.h)

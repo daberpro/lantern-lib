@@ -28,7 +28,7 @@ namespace lantern
             af::array GetDelta(af::array &gradient, uint32_t &index) override
             {
                 this->vector_velocity[index] *= this->beta_1;
-                this->vector_velocity[index] += this->learning_rate * pow(gradient, 2);
+                this->vector_velocity[index] += this->learning_rate * af::pow(gradient, 2);
                 this->vector_velocity[index].eval();
                 return this->learning_rate * (gradient / (af::sqrt(this->vector_velocity[index]) + this->epsilon));
             }

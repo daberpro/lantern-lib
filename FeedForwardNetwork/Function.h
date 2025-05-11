@@ -26,13 +26,13 @@ namespace lantern{
             return value * Sigmoid(value);
         }
 
-        af::array SoftMax(af::array& value){
-            return af::exp(value)/af::sum(af::exp(value));
-        }
-
     }
 
     namespace probability {
+
+        af::array SoftMax(af::array& value){
+            return af::exp(value)/af::sum(af::exp(value));
+        }
 
     }
 
@@ -55,7 +55,7 @@ namespace lantern{
         }
 
         af::array Swish(af::array& value){
-            return activation::Sigmoid(value) +  (value * (1 - value)) * value;
+            return activation::Sigmoid(value) +  Sigmoid(value) * value;
         }
 
         af::array Linear(af::array& value){
@@ -64,6 +64,10 @@ namespace lantern{
 
         af::array SumSquareResidual(af::array& output, af::array& target){
             return -2 * (target - output);
+        }
+
+        af::array CrossEntropySoftMax(af::array& output, af::array& target){
+            return output - target;
         }
 
     }

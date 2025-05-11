@@ -24,10 +24,10 @@ namespace lantern {
         ){
         
             af::array parameters, prev_output, current_output, weight, bias;
-            lantern::utility::Vector<uint32_t> all_layer_sizes = _layer.GetAllLayerSizes();
-            lantern::utility::Vector<lantern::node::NodeType> all_layer_type = _layer.GetAllNodeTypeOfLayer();
+            lantern::utility::Vector<uint32_t>* all_layer_sizes = _layer.GetAllLayerSizes();
+            lantern::utility::Vector<lantern::node::NodeType>* all_layer_type = _layer.GetAllNodeTypeOfLayer();
             
-            for(uint32_t current_layer = 0; current_layer < all_layer_sizes.size() - 1; current_layer++){
+            for(uint32_t current_layer = 0; current_layer < (*all_layer_sizes).size() - 1; current_layer++){
                 
                 prev_output = _outputs[current_layer];
                 parameters = _parameters[current_layer];
@@ -47,7 +47,7 @@ namespace lantern {
                 current_output.eval();
 
                 // adding 1 to skip input layer
-                switch(all_layer_type[current_layer + 1]){
+                switch((*all_layer_type)[current_layer + 1]){
                     case lantern::node::NodeType::LINEAR:
                         current_output = lantern::activation::Linear(current_output);
                     
@@ -87,42 +87,42 @@ namespace lantern {
         ){
             auto& stack_previous_gradient = _optimizer.GetStackPrevGrad();
             auto& vector_velocity = _optimizer.GetVectorVelocity();
-            auto all_node_type = _layer.GetAllNodeTypeOfLayer();
-            
+            auto* all_node_type = _layer.GetAllNodeTypeOfLayer();
+
             _parameters.clear();
             _prev_gradient.clear();
             stack_previous_gradient.clear();
             vector_velocity.clear();
 
-            auto layers = _layer.GetAllLayerSizes();
-            for(uint32_t i = 0; i < layers.size() - 1; i++){
+            auto* layers = _layer.GetAllLayerSizes();
+            for(uint32_t i = 0; i < (*layers).size() - 1; i++){
                 _parameters.push_back(
-                    af::randu(
-                        layers[i+1],
-                        layers[i] + 1,
+                    af::randn(
+                        (*layers)[i+1],
+                        (*layers)[i] + 1,
                         f64
                     )
                 );
                 stack_previous_gradient.push_back(
                     af::constant(
                         0.0f,
-                        layers[i+1],
-                        layers[i] + 1,
+                        (*layers)[i+1],
+                        (*layers)[i] + 1,
                         f64
                     )
                 );
                 vector_velocity.push_back(
                     af::constant(
                         0.0f,
-                        layers[i+1],
-                        layers[i] + 1,
+                        (*layers)[i+1],
+                        (*layers)[i] + 1,
                         f64
                     )
                 );
                 _prev_gradient.push_back(
                     af::constant(
                         0.0f,
-                        layers[i],
+                        (*layers)[i],
                         1,
                         f64
                     )
@@ -130,43 +130,41 @@ namespace lantern {
                 _outputs.push_back(
                     af::constant(
                         0.0f,
-                        layers[i],
+                        (*layers)[i],
                         1,
                         f64
                     )
                 );
 
-                af::array& parameters = _parameters.back();
-
-                // resize the weight to become Xavier/He initalization
-                switch(all_node_type[i]){
+                switch((*all_node_type)[i]){
                     case lantern::node::NodeType::SIGMOID:
                     case lantern::node::NodeType::TANH:
                         lantern::init::XavierNormInit(
-                            layers[i],
-                            layers[i+1],
-                            parameters
+                            (*layers)[i],
+                            (*layers)[i+1],
+                            _parameters.back()
                         );
                     break;
                     case lantern::node::NodeType::RELU:
-                    case lantern::node::NodeType::SWISH:
                     case lantern::node::NodeType::LINEAR:
+                    case lantern::node::NodeType::SWISH:
                         lantern::init::XavierUnifInit(
-                            layers[i],
-                            layers[i+1],
-                            parameters
+                            (*layers)[i],
+                            (*layers)[i+1],
+                            _parameters.back()
                         );
                     break;
                 }
-
+                
                 // set bias to be 0
-                parameters.col(parameters.dims(1) - 1) = af::constant(0.0f,parameters.dims(0),f64);
+                af::array& params = _parameters.back();
+                params.col(params.dims(1) - 1) = af::constant(0.0f,params.dims(0),f64);
             }
 
             _outputs.push_back(
                 af::constant(
                     0.0f,
-                    layers.back(),
+                    (*layers).back(),
                     1,
                     f64
                 )

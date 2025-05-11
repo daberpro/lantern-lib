@@ -1,6 +1,7 @@
-#include "pch.h"
-#include "Headers/Logging.h"
-#include "FeedForwardNetwork/FeedForwardNetwork.h"
+#include "../pch.h"
+#include "../Headers/Logging.h"
+#include "../FeedForwardNetwork/FeedForwardNetwork.h"
+
 
 int main(){
 

@@ -6,35 +6,21 @@ namespace lantern {
     namespace init {
 
         void XavierUnifInit(
-            uint32_t& input_size, 
-            uint32_t& output_size, 
+            const uint32_t& input_size, 
+            const uint32_t& output_size, 
             af::array& parameters
-        ){
-
-            double limit = sqrt(
-                6.0f/static_cast<double>(input_size + output_size)
-            );
-
-            af::array max = af::max(parameters);
-            af::array min = af::min(parameters);
-            parameters = ((parameters - min)/(max - min)) * (2.0f * limit) - 1.0f;
-
+        ) {
+            double limit = sqrt(6.0 / (input_size + output_size));
+            parameters = af::randu(parameters.dims(), f64) * (2.0 * limit) - limit;
         }
 
         void XavierNormInit(
-            uint32_t& input_size, 
-            uint32_t& output_size, 
+            const uint32_t& input_size, 
+            const uint32_t& output_size, 
             af::array& parameters
-        ){
-
-            double limit = sqrt(
-                2.0f/static_cast<double>(input_size + output_size)
-            );
-
-            af::array max = af::max(parameters);
-            af::array min = af::min(parameters);
-            parameters = ((parameters - min)/(max - min)) * (2.0f * limit) - 1.0f;
-
+        ) {
+            double stddev = sqrt(2.0 / (input_size + output_size));
+            parameters = af::randn(parameters.dims(), f64) * stddev;
         }
 
     }
