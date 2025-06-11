@@ -79,7 +79,20 @@
         "random": "cpp",
         "array": "cpp",
         "fstream": "cpp",
-        "numeric": "cpp"
+        "numeric": "cpp",
+        "bitset": "cpp",
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "coroutine": "cpp",
+        "cstdarg": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "filesystem": "cpp",
+        "future": "cpp",
+        "queue": "cpp",
+        "regex": "cpp",
+        "shared_mutex": "cpp",
+        "typeindex": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

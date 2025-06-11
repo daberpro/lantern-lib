@@ -149,6 +149,14 @@ namespace lantern {
                     new(&this->data[i]) T(other.data[i]); // Properly construct objects
                 }
             }
+            
+            void explicitTotalItem(const uint32_t& size){
+                if(size > this->capacity || size < 0){
+                    std::cout << "Explicit total item are out of bounds\n";
+                    exit(EXIT_FAILURE);
+                }
+                this->m_size = size;
+            }
 
             /**
              * @brief Construct a new Vector object
@@ -184,7 +192,7 @@ namespace lantern {
              * 
              * @param data 
              */
-            void push_back(T& data){
+            void push_back(const T& data){
                 if(this->m_size >= this->capacity){
                     this->ResizeCapacity(this->capacity + 10);
                 }

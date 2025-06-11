@@ -19,7 +19,9 @@ namespace lantern{
         }
 
         af::array TanH(af::array& value){
-            return (af::exp(value) - af::exp(-value))/(af::exp(value) + af::exp(-value));
+            af::array exp_ = af::exp(value);
+            af::array nexp_ = af::exp(-value);
+            return (exp_ - nexp_)/(exp_ + nexp_);
         }
 
         af::array Swish(af::array& value){
@@ -31,7 +33,9 @@ namespace lantern{
     namespace probability {
 
         af::array SoftMax(af::array& value){
-            return af::exp(value)/af::sum(af::exp(value));
+            af::array exp_ = af::exp(value);
+            af::array sum_exp_ = af::sum(af::exp(value));
+            return exp_/sum_exp_;
         }
 
     }

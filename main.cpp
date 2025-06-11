@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Headers/Logging.h"
 #include "FeedForwardNetwork/FeedForwardNetwork.h"
+#include "Headers/File.h"
 
 int main(){
 
@@ -9,12 +10,12 @@ int main(){
 	af::setSeed(static_cast<uint64_t>(std::time(nullptr)));
 
 	double input_data[] = {
-		0.925925926,	0.148148148, // {170.0, 65.0} Male
-		0.851851852,	0.037037037, // {160.0, 50.0} Female
-		0.962962963,	0.185185185, // {175.0, 70.0} Male
-		0.814814815,	0.000000000, // {155.0, 45.0} Female
-		1.000000000,	0.222222222, // {180.0, 75.0} Male
-		0.888888889,	0.074074074  // {165.0, 55.0} Female
+		0.6,	0.666666667, // {170.0, 65.0} Male
+		0.2,	0.166666667, // {160.0, 50.0} Female
+		0.8,	0.833333333, // {175.0, 70.0} Male
+		0,		0, // {155.0, 45.0} Female
+		1,		1, // {180.0, 75.0} Male
+		0.4,	0.333333333  // {165.0, 55.0} Female
 	};
 	double target_data[] = {
 		1.0, 0.0,
@@ -66,7 +67,15 @@ int main(){
 		lantern::probability::SoftMax
 	);
 
-	std::cout << test_results << '\n';
+
+	for(auto& ar : model.GetParameters()){
+		std::cout << ar << '\n';
+	}
+	// std::cout << test_results << '\n';
+
+	model.SaveModel("Result.h5");
+	// model.LoadModel("test_dataset.h5");
+
 
 	return 0;
 }

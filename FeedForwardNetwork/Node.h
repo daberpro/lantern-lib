@@ -10,7 +10,8 @@ namespace lantern {
             SIGMOID, // 2
             RELU, // 3
             TANH, // 4
-            SWISH // 5
+            SWISH, // 5
+            SOFTMAX // 6
         };
 
         std::string GetNodeTypeAsString(NodeType node) {
@@ -26,9 +27,9 @@ namespace lantern {
                 case 4:
                 return "lantern::node::NodeType::TANH";
                 case 5:
-                return "lantern::node::NodeType::SOFTMAX";
-                case 6:
                 return "lantern::node::NodeType::SWISH";
+                case 6:
+                return "lantern::node::NodeType::SOFTMAX";
                 default:
                 return "UNKNOWN LANTERN NODE TYPE!";
             }
