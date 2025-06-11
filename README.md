@@ -47,6 +47,9 @@ lantern use Normal Distribution to initalize weight and bias and optimize the in
 this is an example of Multiple Class model, i know i should use the loss function BinaryCrossEntropy but using Cross Entropy also works well 
 
 Example of Multiple Class using lantern-lib
+=======
+## # Example Code
+this a simple example of using lantern-lib to classify gender by weight and height of man and woman
 ```cpp
 #include "../pch.h"
 #include "../Headers/Logging.h"
