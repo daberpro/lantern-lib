@@ -1,6 +1,8 @@
 #pragma once
 #include "../pch.h"
 
+#define LANTERN_GET_FUNC_NAME(Func) #Func
+
 namespace lantern{
 
     namespace activation {

@@ -15,7 +15,3 @@ target_link_libraries(MultipleClass PRIVATE ArrayFire::afcpu AutoGradient matplo
 add_executable(MultipleClassSimple MultipleClassSimple.cpp)
 target_include_directories(MultipleClassSimple PUBLIC ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source ${HDF5_INCLUDE_DIRS})
 target_link_libraries(MultipleClassSimple PRIVATE ArrayFire::afcpu AutoGradient matplot hdf5_cpp-static)
-
-add_executable(GenderByWeightAndHeightSimple GenderByWeightAndHeightSimple.cpp)
-target_include_directories(GenderByWeightAndHeightSimple PUBLIC ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source ${HDF5_INCLUDE_DIRS})
-target_link_libraries(GenderByWeightAndHeightSimple PRIVATE ArrayFire::afcpu AutoGradient matplot hdf5_cpp-static)

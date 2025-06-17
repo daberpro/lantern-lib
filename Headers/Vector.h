@@ -16,34 +16,44 @@ namespace lantern {
             uint32_t capacity = 0, m_size = 0;
             T* data = nullptr;
 
-            void ResizeCapacity(const uint32_t& new_capacity){
+        public:
+
+            void ResizeCapacity(const uint32_t& new_capacity) {
                 // set default capacity size when resize
                 T* new_container = (T*)::operator new((new_capacity) * sizeof(T));
                 uint32_t i = 0;
-                for(; i < this->m_size; i++){
+                for (; i < this->m_size; i++) {
                     new(&new_container[i]) T(std::move(this->data[i]));
                     this->data[i].~T();
                 }
-                ::operator delete(this->data);
+                if (this->data != nullptr) {
+                    ::operator delete(this->data);
+                }
                 this->data = new_container;
                 this->capacity = new_capacity;
             }
 
-            void ResizeCapacity(const uint32_t& new_capacity,const T& all_default_value){
+            void ResizeCapacity(const uint32_t& new_capacity, const T& all_default_value) {
                 // set default capacity size when resize
                 T* new_container = (T*)::operator new((new_capacity) * sizeof(T));
                 uint32_t i = 0;
+                for (; i < this->m_size; i++) {
+                    new(&new_container[i]) T(std::move(this->data[i]));
+                    this->data[i].~T();
+                }
+                if (this->data != nullptr) {
+                    ::operator delete(this->data);
+                }
+
                 this->data = new_container;
                 this->capacity = new_capacity;
                 // fill the data buffer with default value
                 i = 0;
-                for(; i < this->capacity; i++){
+                for (; i < this->capacity; i++) {
                     this->data[i] = all_default_value;
                 }
                 this->m_size = this->capacity;
             }
-
-        public:
 
             struct Iterator {
 
@@ -173,6 +183,14 @@ namespace lantern {
              */
             uint32_t getCapacity() const {
                 return this->capacity;
+            }
+
+            template <typename... Args>
+            void emplace_back(Args&&... data) {
+                if (this->m_size >= this->capacity) {
+                    this->ResizeCapacity(this->capacity + 10);
+                }
+                new(&this->data[this->m_size++]) T(std::forward<Args>(data)...);
             }
 
             /**
@@ -465,7 +483,9 @@ namespace lantern {
                 for (uint32_t i = 0; i < this->m_size; i++) {
                     this->data[i].~T();
                 }
-                ::operator delete(this->data);
+                if (this->data != nullptr) {
+                    ::operator delete(this->data);
+                }
                 
                 this->m_size = 0;
                 this->capacity = 0;
@@ -473,6 +493,7 @@ namespace lantern {
             }
 
         };
+
 
         /**
          * @brief Generate rnadom normal distribution vector

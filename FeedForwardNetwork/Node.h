@@ -11,7 +11,8 @@ namespace lantern {
             RELU, // 3
             TANH, // 4
             SWISH, // 5
-            SOFTMAX // 6
+            SOFTMAX, // 6
+            UKNOWN
         };
 
         std::string GetNodeTypeAsString(NodeType node) {
@@ -33,6 +34,26 @@ namespace lantern {
                 default:
                 return "UNKNOWN LANTERN NODE TYPE!";
             }
+        }
+
+        NodeType GetNodeTypeFromString(const std::string _str) {
+            if (strcmp(_str.c_str(), "lantern::node::NodeType::NOTHING") == 0)
+                return NodeType::NOTHING;
+            else if (strcmp(_str.c_str(), "lantern::node::NodeType::LINEAR") == 0)
+                return NodeType::LINEAR;
+            else if (strcmp(_str.c_str(), "lantern::node::NodeType::SIGMOID") == 0)
+                return NodeType::SIGMOID;
+            else if (strcmp(_str.c_str(), "lantern::node::NodeType::RELU") == 0)
+                return NodeType::RELU;
+            else if (strcmp(_str.c_str(), "lantern::node::NodeType::TANH") == 0)
+                return NodeType::TANH;
+            else if (strcmp(_str.c_str(), "lantern::node::NodeType::SWISH") == 0)
+                return NodeType::SWISH;
+            else if (strcmp(_str.c_str(), "lantern::node::NodeType::SOFTMAX") == 0)
+                return NodeType::SOFTMAX;
+            else
+                return NodeType::UKNOWN;
+
         }
         
     }
