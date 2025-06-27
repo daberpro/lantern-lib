@@ -19,7 +19,6 @@ namespace lantern {
 
         class FeedForwardNetwork{
         private:
-
             lantern::utility::Vector<lantern::utility::Vector<double>> loaded_model_params;
             lantern::utility::Vector<af::array> parameters;
             lantern::utility::Vector<af::array> prev_gradient;
@@ -27,7 +26,7 @@ namespace lantern {
             lantern::utility::Vector<uint32_t> batch_index;
 
             af::array *input_data, *target_data;
-            lantern::layer::Layer *layer;
+            lantern::ffn::layer::Layer *layer;
             lantern::utility::Vector<uint32_t> each_class_size;
 
             bool is_loaded_model = false;
@@ -69,7 +68,7 @@ namespace lantern {
             FeedForwardNetwork(
                 af::array* _input,
                 af::array* _output,
-                lantern::layer::Layer* _layer,
+                lantern::ffn::layer::Layer* _layer,
                 std::initializer_list<uint32_t> _each_class_size,
                 const double& _treshold,
                 const uint32_t& _epoch
@@ -91,7 +90,7 @@ namespace lantern {
                 this->target_data = _target_data;
             }
 
-            void SetLayer(lantern::layer::Layer* _layer){
+            void SetLayer(lantern::ffn::layer::Layer* _layer){
                 this->layer = _layer;
             }
 
@@ -130,7 +129,7 @@ namespace lantern {
                 Optimizer& _optimizer,
                 LossFunction _loss_func,
                 DerivativeLoss _derivative_loss,
-                OutFunction _output_func
+                OutFunction _output_func = lantern::activation::Linear
             ){
 
                 // check all required data 
@@ -142,7 +141,7 @@ namespace lantern {
                     exit(EXIT_FAILURE);
                 }
 
-                lantern::feedforward::Initialize(
+                lantern::ffn::feedforward::Initialize(
                     (*this->layer),
                     this->parameters,
                     this->prev_gradient,
@@ -158,14 +157,20 @@ namespace lantern {
                 }
 	            lantern::data::GetRandomSampleClassIndex<batch_size>(this->batch_index,this->each_class_size,total_size_of_class);
 
+                double progress = 0;
+                int actual_progress = 0;
                 uint32_t _bacth_size = batch_size;
+                
+                std::cout << '\n' << af::infoString() << "\n\n";
+                std::cout << "Total epoch : " << this->epoch << '\n';
+                
                 while(this->current_iter < this->epoch){
 
                     for(auto& selected_index : batch_index){
             
                         outputs[0] = (*this->input_data).row(selected_index).T();
                         target_output = (*this->target_data).row(selected_index).T();
-                        lantern::feedforward::FeedForward(
+                        lantern::ffn::feedforward::FeedForward(
                             (*this->layer),
                             this->outputs,
                             this->parameters
@@ -173,10 +178,9 @@ namespace lantern {
             
                         output = _output_func(outputs.back());
                         loss = _loss_func(output, target_output) / batch_size;
-                        std::cout << "Loss : " << loss << '\n';
 
                         prev_gradient.back() = _derivative_loss(output, target_output);
-                        lantern::backprop::Backpropagate(
+                        lantern::ffn::backprop::Backpropagate(
                             (*this->layer),
                             this->parameters,
                             this->prev_gradient,
@@ -189,11 +193,34 @@ namespace lantern {
             
                     lantern::data::GetRandomSampleClassIndex<batch_size>(this->batch_index,this->each_class_size,total_size_of_class);
                     this->current_iter++;
-            
+
+                    progress = static_cast<double>(this->current_iter)/static_cast<double>(this->epoch);
+                    actual_progress = static_cast<int>(progress * 30);
+
+                    std::cout << "\rTraining Progress ["
+                    << std::string(actual_progress, '=')
+                    << ">"
+                    << std::string(30 - actual_progress, ' ')
+                    << "]"
+                    << std::fixed << std::setprecision(16) << std::setw(10)
+                    << " Loss : " << loss
+                    << " Epoch : " 
+                    << this->current_iter << std::flush;
+                    
                     if(loss <= this->min_treshold){
+                        std::cout << "\rTraining Progress ["
+                        << std::string(30, '=')
+                        << ">"
+                        << "]"
+                        << std::fixed << std::setprecision(16) << std::setw(10)
+                        << " Loss : " << loss
+                        << " Epoch : " 
+                        << this->current_iter << std::flush;
                         break;
                     }
                 }
+
+                std::cout << "\n\n";
 
 
             }
@@ -213,7 +240,7 @@ namespace lantern {
             ){
                 for(uint32_t i = 0; i < _inputs.dims(0); i++){
                     this->outputs[0] = _inputs.row(i).T();
-                    lantern::feedforward::FeedForward(
+                    lantern::ffn::feedforward::FeedForward(
                         (*this->layer),
                         this->outputs,
                         this->parameters
@@ -278,9 +305,11 @@ namespace lantern {
                         static_cast<uint64_t>(param.dims(3))
                     });
 
+                    // create dataset for param
                     model_saver_.CreateDataset(dataset_name_, dataspace_name_, H5::PredType::NATIVE_DOUBLE);
                     model_saver_.WriteDataset(dataset_name_, data, H5::PredType::NATIVE_DOUBLE);
 
+                    // create attribute to save node type on this layer
                     model_saver_.CreateScalarDataSpace(output_node_type_);
                     model_saver_.CreateAttributeAtDataset(
                         dataset_name_,
@@ -300,11 +329,14 @@ namespace lantern {
 
                 }
 
+                // create group model meta data to load later
                 model_saver_.CreateGroup("/ModelMetaData");
                 model_saver_.SetActiveGroup("/ModelMetaData");
 
+                // get current each layer size
                 auto* total_node_each_layer = this->layer->GetAllLayerSizes();
 
+                // create attribute to save all layer size
                 model_saver_.CreateDataSpace<2>("TOTAL_NODE_EACH_LAYER",{1,total_node_each_layer->size()});
                 model_saver_.CreateAttributeAtGroup(
                     "/ModelMetaData",
@@ -319,6 +351,8 @@ namespace lantern {
                     total_node_each_layer->getData()
                 );
 
+                // create attribute to save output function
+                // just like in Train or Predict function
                 model_saver_.CreateScalarDataSpace("OUTPUT_FUNCTION");
                 model_saver_.CreateAttributeAtGroup(
                     "/ModelMetaData",
@@ -354,7 +388,7 @@ namespace lantern {
 
 
                 // create layer object for each layer meta data
-                lantern::layer::Layer* layer_ = new lantern::layer::Layer();
+                lantern::ffn::layer::Layer* layer_ = new lantern::ffn::layer::Layer();
                 auto all_node_type_ = layer_->GetAllNodeTypeOfLayer();
                 auto all_layer_size_ = layer_->GetAllLayerSizes();
 
@@ -381,6 +415,7 @@ namespace lantern {
                         node_type_
                     );
 
+                    // add an array to hold output at layer layer_index_
                     this->outputs.push_back(
                         af::constant(
                             0.0f,
@@ -389,10 +424,11 @@ namespace lantern {
                             f64
                         )
                     );
+                    // push all "layer" node type to layer
                     all_node_type_->push_back(lantern::node::GetNodeTypeFromString(node_type_));
 
                 }
-
+                // add the last layer outputs an array to hold
                 this->outputs.push_back(
                     af::constant(
                         0.0f,
@@ -428,6 +464,10 @@ namespace lantern {
             }
 
             ~FeedForwardNetwork(){
+                // if the model layer came from loaded model
+                // we need to release it, use condition to check 
+                // if the layer was from loaded we can safe to delete them
+                // if not do not delete them, it will cause an error
                 if (this->is_loaded_model) {
                     delete this->layer;
                 }

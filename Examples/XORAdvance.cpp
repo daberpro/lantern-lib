@@ -9,7 +9,7 @@ int main(){
 	std::cout << "\n\n";
 	af::setSeed(static_cast<uint64_t>(std::time(nullptr)));
 
-	lantern::layer::Layer layer;
+	lantern::ffn::layer::Layer layer;
 	layer.Add<lantern::node::NodeType::NOTHING>(2); // layer 0 (Input)
 	layer.Add<lantern::node::NodeType::SWISH>(6); // layer 1 (Hidden 1)
 	layer.Add<lantern::node::NodeType::SWISH>(4); // layer 2 (Hidden 2)
@@ -26,7 +26,7 @@ int main(){
 	af::array input = af::array(4,2,input_data);
 	af::array target = af::array(4,1,target_data);
 
-	lantern::feedforward::Initialize(
+	lantern::ffn::feedforward::Initialize(
 		layer,
 		parameters,
 		prev_gradient,
@@ -45,7 +45,7 @@ int main(){
 		outputs[0] = input.row(index).T();
 		selected_target = target.row(index).T();
 
-		lantern::feedforward::FeedForward(
+		lantern::ffn::feedforward::FeedForward(
 			layer,
 			outputs,
 			parameters
@@ -60,7 +60,7 @@ int main(){
 
 		prev_gradient.back() = lantern::derivative::SumSquareResidual(outputs.back(),selected_target);
 
-		lantern::backprop::Backpropagate(
+		lantern::ffn::backprop::Backpropagate(
 			layer,
 			parameters,
 			prev_gradient,
@@ -74,7 +74,7 @@ int main(){
 
 	for(uint32_t i = 0; i < 4; i++){
 		outputs[0] = input.row(i).T();
-		lantern::feedforward::FeedForward(
+		lantern::ffn::feedforward::FeedForward(
 			layer,
 			outputs,
 			parameters

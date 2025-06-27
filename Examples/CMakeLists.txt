@@ -1,17 +1,30 @@
 cmake_minimum_required(VERSION 3.31)
 project(Examples)
 
-find_package(ZLIB REQUIRED)
-find_package(HDF5 REQUIRED COMPONENTS C)
-
 add_executable(XORAdvance XORAdvance.cpp)
-target_include_directories(XORAdvance PUBLIC ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source ${HDF5_INCLUDE_DIRS})
-target_link_libraries(XORAdvance PRIVATE ArrayFire::afcpu AutoGradient matplot hdf5_cpp-static)
+target_link_libraries(XORAdvance PRIVATE ArrayFire::afcpu hdf5_cpp-static)
+
+add_executable(XORSimple XORSimple.cpp)
+target_link_libraries(XORSimple PRIVATE ArrayFire::afcpu hdf5_cpp-static)
 
 add_executable(MultipleClass MultipleClass.cpp)
-target_include_directories(MultipleClass PUBLIC ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source ${HDF5_INCLUDE_DIRS})
-target_link_libraries(MultipleClass PRIVATE ArrayFire::afcpu AutoGradient matplot hdf5_cpp-static)
+target_link_libraries(MultipleClass PRIVATE ArrayFire::afcpu hdf5_cpp-static)
 
 add_executable(MultipleClassSimple MultipleClassSimple.cpp)
-target_include_directories(MultipleClassSimple PUBLIC ${PROJECT_SOURCE_DIR}/ExternalDependencies/matplotplusplus/source ${HDF5_INCLUDE_DIRS})
-target_link_libraries(MultipleClassSimple PRIVATE ArrayFire::afcpu AutoGradient matplot hdf5_cpp-static)
+target_link_libraries(MultipleClassSimple PRIVATE ArrayFire::afcpu hdf5_cpp-static)
+
+add_executable(MnistDataset MnistDataset.cpp)
+target_link_libraries(MnistDataset PRIVATE ArrayFire::afcpu)
+
+if(COPY_DATASET)
+    set(DATASET mnist)
+    foreach(dataset ${DATASET})
+        foreach(target XORAdvance XORSimple MultipleClass MultipleClassSimple)
+            add_custom_command(TARGET ${target} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/Dataset/${dataset}"
+                "$<TARGET_FILE_DIR:${target}>/dataset"
+            )
+        endforeach()
+    endforeach()
+endif()

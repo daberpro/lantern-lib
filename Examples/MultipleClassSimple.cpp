@@ -59,7 +59,7 @@ int main(){
 	 * 2 -> 15 -> 15 -> 3
 	 * NOTHING -> SWISH -> SWISH -> LINEAR
 	 */
-	lantern::layer::Layer layer;
+	lantern::ffn::layer::Layer layer;
 	layer.Add<lantern::node::NodeType::NOTHING>(2);
 	layer.Add<lantern::node::NodeType::SWISH>(15);
 	layer.Add<lantern::node::NodeType::SWISH>(15);

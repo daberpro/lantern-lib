@@ -492,6 +492,15 @@ namespace lantern {
                 this->data = nullptr;
             }
 
+            T at(const uint32_t& index){
+                if((index < 0 )|| (index > this->m_size)){
+                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
+                    __debugbreak();
+                    exit(EXIT_FAILURE);
+                }
+                return this->data[index];
+            }
+
         };
 
 
