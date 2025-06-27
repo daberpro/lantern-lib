@@ -49,7 +49,7 @@ this is an example of Multiple Class model, i know i should use the loss functio
 Example of Multiple Class using lantern-lib
 =======
 ## # Example Code
-this a simple example of using lantern-lib to classify gender by weight and height of man and woman
+this a simple example of using lantern-lib to classify multiple class
 ```cpp
 #include "../pch.h"
 #include "../Headers/Logging.h"
