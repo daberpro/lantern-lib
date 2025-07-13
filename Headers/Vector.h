@@ -323,7 +323,7 @@ namespace lantern {
              * 
              * @return uint32_t 
              */
-            uint32_t size(){
+            uint32_t size() const {
                 return this->m_size;
             }
 
@@ -331,21 +331,7 @@ namespace lantern {
                 this->clear();
             }
 
-            /**
-             * @brief Get data at index
-             * 
-             * @param index 
-             * @return const T& 
-             */
-            const T& operator [](const uint32_t& index) const{
-                if((index < 0 )|| (index > this->m_size)){
-                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
-                    __debugbreak();
-                    exit(EXIT_FAILURE);
-                }
-                return this->data[index];
-            }
-
+           
 
             /**
              * @brief Get data at index
@@ -356,7 +342,10 @@ namespace lantern {
             T& operator [](const uint32_t& index) {
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
-                    __debugbreak();
+                    std::cout << "Call stack:\n";
+                    for (const auto& entry : std::stacktrace::current()) {
+                        std::cout << entry << '\n';
+                    }
                     exit(EXIT_FAILURE);
                 }
                 return this->data[index];
@@ -371,7 +360,10 @@ namespace lantern {
             const T& operator [](const int32_t& index) const{
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
-                    __debugbreak();
+                    std::cout << "Call stack:\n";
+                    for (const auto& entry : std::stacktrace::current()) {
+                        std::cout << entry << '\n';
+                    }
                     exit(EXIT_FAILURE);
                 }
                 return this->data[index];
@@ -386,7 +378,10 @@ namespace lantern {
             T& operator [](const int32_t& index) {
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
-                    __debugbreak();
+                    std::cout << "Call stack:\n";
+                    for (const auto& entry : std::stacktrace::current()) {
+                        std::cout << entry << '\n';
+                    }
                     exit(EXIT_FAILURE);
                 }
                 return this->data[index];
@@ -470,7 +465,7 @@ namespace lantern {
              * 
              * @return T* 
              */
-            T* getData(){
+            T* getData() const {
                 return this->data;
             }
 

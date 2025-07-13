@@ -57,10 +57,10 @@ int main(){
 	lantern::data::GetRandomSampleClassIndex<15>(batch_index,15,15,15 - 1);
 
 	lantern::ffn::layer::Layer layer;
-	layer.Add<lantern::node::NodeType::NOTHING>(2);
-	layer.Add<lantern::node::NodeType::SWISH>(15);
-	layer.Add<lantern::node::NodeType::SWISH>(15);
-	layer.Add<lantern::node::NodeType::LINEAR>(3);
+	layer.Add<lantern::ffn::node::NodeType::NOTHING>(2);
+	layer.Add<lantern::ffn::node::NodeType::SWISH>(15);
+	layer.Add<lantern::ffn::node::NodeType::SWISH>(15);
+	layer.Add<lantern::ffn::node::NodeType::LINEAR>(3);
 
 	lantern::utility::Vector<af::array> parameters;
 	lantern::utility::Vector<af::array> prev_gradient;

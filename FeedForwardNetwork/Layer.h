@@ -13,7 +13,7 @@ namespace lantern {
             private:
     
                 lantern::utility::Vector<uint32_t> m_LayersSize;
-                lantern::utility::Vector<lantern::node::NodeType> m_NodeTypeOfLayer;
+                lantern::utility::Vector<lantern::ffn::node::NodeType> m_NodeTypeOfLayer;
     
             public:
     
@@ -25,23 +25,18 @@ namespace lantern {
                 }
     
                 template <
-                    lantern::node::NodeType nodeTypeOfLayer = lantern::node::NodeType::NOTHING
+                    lantern::ffn::node::NodeType nodeTypeOfLayer = lantern::ffn::node::NodeType::NOTHING
                 >
                 void Add(uint32_t _total_node){
                     this->m_LayersSize.push_back(_total_node);
                     this->m_NodeTypeOfLayer.push_back(nodeTypeOfLayer);
                 }
     
-                void Add(uint32_t _total_node, const lantern::node::NodeType& _node_type) {
-                    this->m_LayersSize.push_back(_total_node);
-                    this->m_NodeTypeOfLayer.push_back(_node_type);
-                }
-    
                 lantern::utility::Vector<uint32_t>* GetAllLayerSizes() {
                     return &this->m_LayersSize;
                 }
     
-                lantern::utility::Vector<lantern::node::NodeType>* GetAllNodeTypeOfLayer() {
+                lantern::utility::Vector<lantern::ffn::node::NodeType>* GetAllNodeTypeOfLayer() {
                     return &this->m_NodeTypeOfLayer;
                 }
     

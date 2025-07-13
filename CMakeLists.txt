@@ -11,18 +11,26 @@ find_package(HDF5 REQUIRED)
 find_package(ArrayFire REQUIRED)
 find_package(MatPlot++ REQUIRED)
 
+file(
+    GLOB HEADER_FILES 
+    "${CMAKE_SOURCE_DIR}/ConvolutionalNeuralNetwork/*.h"
+    "${CMAKE_SOURCE_DIR}/FeedForwardNetwork/*.h"
+    "${CMAKE_SOURCE_DIR}/Headers/*.h"
+    "${CMAKE_SOURCE_DIR}/Dataset/*.h"
+)
+
 # add_definitions(/MTd)
 add_subdirectory(${CMAKE_SOURCE_DIR}/AutoGradient)
 add_subdirectory(${CMAKE_SOURCE_DIR}/Examples)
-add_executable(${PROJECT_NAME} main.cpp pch.h)
+add_executable(${PROJECT_NAME} main.cpp pch.h ${HEADER_FILES})
 target_compile_definitions(${PROJECT_NAME} PUBLIC H5_BUILT_AS_STATIC_LIB)
 
+
 target_include_directories(
-    ${PROJECT_NAME} PUBLIC 
-    ${PROJECT_SOURCE_DIR}/Headers
-    ${PROJECT_SOURCE_DIR}/Dataset
+    ${PROJECT_NAME} PUBLIC
     ${HDF5_INCLUDE_DIRS}
 )
+
 target_link_libraries(${PROJECT_NAME} PUBLIC AutoGradient ArrayFire::afcpu Matplot++::nodesoup Matplot++::matplot hdf5_cpp-static)
 target_precompile_headers(${PROJECT_NAME} PUBLIC pch.h)
 

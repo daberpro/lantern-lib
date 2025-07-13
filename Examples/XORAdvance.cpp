@@ -10,10 +10,10 @@ int main(){
 	af::setSeed(static_cast<uint64_t>(std::time(nullptr)));
 
 	lantern::ffn::layer::Layer layer;
-	layer.Add<lantern::node::NodeType::NOTHING>(2); // layer 0 (Input)
-	layer.Add<lantern::node::NodeType::SWISH>(6); // layer 1 (Hidden 1)
-	layer.Add<lantern::node::NodeType::SWISH>(4); // layer 2 (Hidden 2)
-	layer.Add<lantern::node::NodeType::SIGMOID>(1); // layer 3 (Output)
+	layer.Add<lantern::ffn::node::NodeType::NOTHING>(2); // layer 0 (Input)
+	layer.Add<lantern::ffn::node::NodeType::SWISH>(6); // layer 1 (Hidden 1)
+	layer.Add<lantern::ffn::node::NodeType::SWISH>(4); // layer 2 (Hidden 2)
+	layer.Add<lantern::ffn::node::NodeType::SIGMOID>(1); // layer 3 (Output)
 
 	lantern::utility::Vector<af::array> outputs;
 	lantern::utility::Vector<af::array> parameters;

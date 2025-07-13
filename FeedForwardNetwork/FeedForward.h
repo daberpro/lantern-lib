@@ -2,9 +2,9 @@
 #include "../Headers/Vector.h"
 #include "../pch.h"
 #include "Node.h"
-#include "Layering.h"
-#include "Function.h"
-#include "Initialize.h"
+#include "Layer.h"
+#include "../Headers/Function.h"
+#include "../Headers/Initialize.h"
 
 namespace lantern {
 
@@ -27,7 +27,7 @@ namespace lantern {
             
                 af::array parameters, prev_output, current_output, weight, bias;
                 lantern::utility::Vector<uint32_t>* all_layer_sizes = _layer.GetAllLayerSizes();
-                lantern::utility::Vector<lantern::node::NodeType>* all_layer_type = _layer.GetAllNodeTypeOfLayer();
+                lantern::utility::Vector<lantern::ffn::node::NodeType>* all_layer_type = _layer.GetAllNodeTypeOfLayer();
                 
                 for(uint32_t current_layer = 0; current_layer < (*all_layer_sizes).size() - 1; current_layer++){
                     
@@ -50,23 +50,23 @@ namespace lantern {
     
                     // adding 1 to skip input layer
                     switch((*all_layer_type)[current_layer + 1]){
-                        case lantern::node::NodeType::LINEAR:
+                        case lantern::ffn::node::NodeType::LINEAR:
                             current_output = lantern::activation::Linear(current_output);
                         
                         break;
-                        case lantern::node::NodeType::SIGMOID:
+                        case lantern::ffn::node::NodeType::SIGMOID:
                             current_output = lantern::activation::Sigmoid(current_output);
                         
                         break;
-                        case lantern::node::NodeType::RELU:
+                        case lantern::ffn::node::NodeType::RELU:
                             current_output = lantern::activation::ReLU(current_output);
                         
                         break;
-                        case lantern::node::NodeType::TANH:
+                        case lantern::ffn::node::NodeType::TANH:
                             current_output = lantern::activation::TanH(current_output);
                         
                         break;
-                        case lantern::node::NodeType::SWISH:
+                        case lantern::ffn::node::NodeType::SWISH:
                             current_output = lantern::activation::Swish(current_output);
                         
                         break;
@@ -139,17 +139,17 @@ namespace lantern {
                     );
     
                     switch((*all_node_type)[i]){
-                        case lantern::node::NodeType::SIGMOID:
-                        case lantern::node::NodeType::TANH:
+                        case lantern::ffn::node::NodeType::SIGMOID:
+                        case lantern::ffn::node::NodeType::TANH:
                             lantern::init::XavierNormInit(
                                 (*layers)[i],
                                 (*layers)[i+1],
                                 _parameters.back()
                             );
                         break;
-                        case lantern::node::NodeType::RELU:
-                        case lantern::node::NodeType::LINEAR:
-                        case lantern::node::NodeType::SWISH:
+                        case lantern::ffn::node::NodeType::RELU:
+                        case lantern::ffn::node::NodeType::LINEAR:
+                        case lantern::ffn::node::NodeType::SWISH:
                             lantern::init::XavierUnifInit(
                                 (*layers)[i],
                                 (*layers)[i+1],

@@ -60,10 +60,10 @@ int main(){
 	 * NOTHING -> SWISH -> SWISH -> LINEAR
 	 */
 	lantern::ffn::layer::Layer layer;
-	layer.Add<lantern::node::NodeType::NOTHING>(2);
-	layer.Add<lantern::node::NodeType::SWISH>(15);
-	layer.Add<lantern::node::NodeType::SWISH>(15);
-	layer.Add<lantern::node::NodeType::LINEAR>(3);
+	layer.Add<lantern::ffn::node::NodeType::NOTHING>(2);
+	layer.Add<lantern::ffn::node::NodeType::SWISH>(15);
+	layer.Add<lantern::ffn::node::NodeType::SWISH>(15);
+	layer.Add<lantern::ffn::node::NodeType::LINEAR>(3);
 
 	/**
 	 * Using lantern AdaptiveMomenEstimation (ADAM) optimizer
@@ -155,6 +155,8 @@ int main(){
 	 * Load the model we have already save
 	 */
 	model.LoadModel("Result.h5");
+	auto l = model.GetLayer();
+	std::print("Node type of loaded model : \n{}",(*l->GetAllNodeTypeOfLayer()));
 	af::array predict_result;
 	/**
 	 * Then predict again 

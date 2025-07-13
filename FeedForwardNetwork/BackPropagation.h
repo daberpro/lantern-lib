@@ -1,7 +1,7 @@
 #pragma once
 #include "../pch.h"
-#include "Function.h"
-#include "Layering.h"
+#include "../Headers/Function.h"
+#include "Layer.h"
 #include "Node.h"
 #include "Regularization.h"
 
@@ -35,7 +35,7 @@ namespace lantern{
     
                 double batch_size = static_cast<double>(_batch_size);
                 lantern::utility::Vector<uint32_t>* all_layer_sizes = _layer.GetAllLayerSizes();
-                lantern::utility::Vector<lantern::node::NodeType>* all_layer_type = _layer.GetAllNodeTypeOfLayer();
+                lantern::utility::Vector<lantern::ffn::node::NodeType>* all_layer_type = _layer.GetAllNodeTypeOfLayer();
                 af::array output, prev_output, gradient, gradient_weight, gradient_bias, all_gradient, weights;
     
                 for(uint32_t current_layer = (*all_layer_sizes).size() - 1; current_layer > 0; current_layer--){
@@ -46,23 +46,23 @@ namespace lantern{
                     weights = parameters.cols(0,parameters.dims(1) - 2);
                     
                     switch((*all_layer_type)[current_layer]){
-                        case lantern::node::NodeType::LINEAR:
+                        case lantern::ffn::node::NodeType::LINEAR:
                             gradient = lantern::derivative::Linear(prev_output);
                         
                         break;
-                        case lantern::node::NodeType::SIGMOID:
+                        case lantern::ffn::node::NodeType::SIGMOID:
                             gradient = lantern::derivative::Sigmoid(prev_output);
                         
                         break;
-                        case lantern::node::NodeType::RELU:
+                        case lantern::ffn::node::NodeType::RELU:
                             // gradient = lantern::derivative::ReLU(prev_output);
                         
                         break;
-                        case lantern::node::NodeType::TANH:
+                        case lantern::ffn::node::NodeType::TANH:
                             // gradient = lantern::derivative::TanH(prev_output);
                         
                         break;
-                        case lantern::node::NodeType::SWISH:
+                        case lantern::ffn::node::NodeType::SWISH:
                             gradient = lantern::derivative::Swish(prev_output);
                         
                         break;
@@ -80,6 +80,9 @@ namespace lantern{
                         gradient_weight,
                         gradient_bias
                     );
+
+                    all_gradient /= batch_size;
+                    all_gradient.eval();
     
                     uint32_t opt_index = current_layer - 1;
                     af::array delta = _optimizer.GetDelta(all_gradient,opt_index);
@@ -95,7 +98,11 @@ namespace lantern{
     
             }
     
-    
+        
+            /*
+            * TODO: Remove this backpropagation function of ffn, because we can replace batch with 1
+            * 
+            */
             template <typename Optimizer>
             void Backpropagate(
                 lantern::ffn::layer::Layer& _layer,
@@ -106,7 +113,7 @@ namespace lantern{
             ){
     
                 lantern::utility::Vector<uint32_t>* all_layer_sizes = _layer.GetAllLayerSizes();
-                lantern::utility::Vector<lantern::node::NodeType>* all_layer_type = _layer.GetAllNodeTypeOfLayer();
+                lantern::utility::Vector<lantern::ffn::node::NodeType>* all_layer_type = _layer.GetAllNodeTypeOfLayer();
                 af::array output, prev_output, gradient, gradient_weight, gradient_bias, all_gradient;
     
                 for(uint32_t current_layer = (*all_layer_sizes).size() - 1; current_layer > 0; current_layer--){
@@ -116,23 +123,23 @@ namespace lantern{
                     af::array& parameters = _parameters[current_layer - 1];
                    
                     switch((*all_layer_type)[current_layer]){
-                        case lantern::node::NodeType::LINEAR:
+                        case lantern::ffn::node::NodeType::LINEAR:
                             gradient = lantern::derivative::Linear(prev_output);
                         
                         break;
-                        case lantern::node::NodeType::SIGMOID:
+                        case lantern::ffn::node::NodeType::SIGMOID:
                             gradient = lantern::derivative::Sigmoid(prev_output);
                         
                         break;
-                        case lantern::node::NodeType::RELU:
+                        case lantern::ffn::node::NodeType::RELU:
                             // gradient = lantern::derivative::ReLU(prev_output);
                         
                         break;
-                        case lantern::node::NodeType::TANH:
+                        case lantern::ffn::node::NodeType::TANH:
                             // gradient = lantern::derivative::TanH(prev_output);
                         
                         break;
-                        case lantern::node::NodeType::SWISH:
+                        case lantern::ffn::node::NodeType::SWISH:
                             gradient = lantern::derivative::Swish(prev_output);
                         
                         break;

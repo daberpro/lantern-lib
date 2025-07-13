@@ -1,17 +1,18 @@
 #pragma once
 #include "../pch.h"
-#include "Node.h"
-#include "Layering.h"
-#include "FeedForward.h"
-#include "Function.h"
-#include "Backpropagation.h"
-#include "Optimizer/Optimizer.h"
-#include "Initialize.h"
-#include "Regularization.h"
-#include "DataProcessing.h"
+#include "../Headers/Function.h"
+#include "../Headers/Initialize.h"
 #include "../Headers/Vector.h"
 #include "../Headers/Logging.h"
 #include "../Headers/File.h"
+
+#include "Node.h"
+#include "Layer.h"
+#include "FeedForward.h"
+#include "Backpropagation.h"
+#include "Optimizer/Optimizer.h"
+#include "Regularization.h"
+#include "DataProcessing.h"
 
 namespace lantern {
 
@@ -287,7 +288,7 @@ namespace lantern {
                 uint32_t index = 0, rank = 1;
                 double* data = nullptr;
                 H5::StrType strType(H5::PredType::C_S1,H5T_VARIABLE);
-                lantern::utility::Vector<lantern::node::NodeType>* all_layer_type_ = this->layer->GetAllNodeTypeOfLayer();
+                lantern::utility::Vector<lantern::ffn::node::NodeType>* all_layer_type_ = this->layer->GetAllNodeTypeOfLayer();
 
                 for(af::array& param : this->parameters){
 
@@ -321,7 +322,7 @@ namespace lantern {
                         dataset_name_,
                         "OUTPUT_FUNCTION_"+dataset_name_,
                         strType,
-                        lantern::node::GetNodeTypeAsString((*all_layer_type_)[index+1])
+                        lantern::ffn::node::GetNodeTypeAsString((*all_layer_type_)[index+1])
                     );
 
                     index++;
@@ -403,7 +404,7 @@ namespace lantern {
                 model_loader_.ReadAttributeAtGroup(group_name_, "TOTAL_NODE_EACH_LAYER", H5::PredType::NATIVE_UINT32, all_layer_size_->getData());
 
                 // get all node type of each layer
-                all_node_type_->push_back(lantern::node::NodeType::NOTHING); // first layer always an input which type of NOTHING (no activation will happend)
+                all_node_type_->push_back(lantern::ffn::node::NodeType::NOTHING); // first layer always an input which type of NOTHING (no activation will happend)
                 std::string node_type_, layer_index_str_;
                 for (uint32_t layer_index_ = 0; layer_index_ < all_layer_size_->size() - 1; layer_index_++) {
 
@@ -425,7 +426,7 @@ namespace lantern {
                         )
                     );
                     // push all "layer" node type to layer
-                    all_node_type_->push_back(lantern::node::GetNodeTypeFromString(node_type_));
+                    all_node_type_->push_back(lantern::ffn::node::GetNodeTypeFromString(node_type_));
 
                 }
                 // add the last layer outputs an array to hold
@@ -471,6 +472,10 @@ namespace lantern {
                 if (this->is_loaded_model) {
                     delete this->layer;
                 }
+            }
+
+            lantern::ffn::layer::Layer* GetLayer() {
+                return this->layer;
             }
 
         };

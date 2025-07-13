@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -21,3 +22,5 @@
 #include <memory>
 #include <filesystem>
 #include <fstream>
+#include <print>
+#include <stacktrace>
