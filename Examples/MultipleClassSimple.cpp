@@ -65,11 +65,13 @@ int main(){
 	layer.Add<lantern::ffn::node::NodeType::SWISH>(15);
 	layer.Add<lantern::ffn::node::NodeType::LINEAR>(3);
 
+	layer.PrintLayerInfo();
+
 	/**
 	 * Using lantern AdaptiveMomenEstimation (ADAM) optimizer
 	 * with default value
 	 */
-	lantern::optimizer::AdaptiveMomentEstimation optimizer;
+	lantern::ffn::optimizer::AdaptiveMomentEstimation optimizer;
 
 	/**
 	 * Create model using FeedForwardNetwork Class and pass
@@ -114,13 +116,6 @@ int main(){
 	);
 
 	/**
-	 * Show all parameters that model already optimize
-	 */
-	for (auto param : model.GetParameters()) {
-		std::cout << param << '\n';
-	}
-
-	/**
 	 * Create test result to show the result
 	 * we just feed the model with sam input to see all output
 	 * the Predict() function just take input data, and an af::array to save the output result prediction
@@ -156,7 +151,6 @@ int main(){
 	 */
 	model.LoadModel("Result.h5");
 	auto l = model.GetLayer();
-	std::print("Node type of loaded model : \n{}",(*l->GetAllNodeTypeOfLayer()));
 	af::array predict_result;
 	/**
 	 * Then predict again 

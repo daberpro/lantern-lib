@@ -3,16 +3,17 @@
 #include "../Headers/Function.h"
 #include "../Headers/Initialize.h"
 #include "../Headers/Vector.h"
-#include "../Headers/Logging.h"
+//#include "../Headers/Logging.h"
 #include "../Headers/File.h"
 
-#include "Node.h"
-#include "Layer.h"
-#include "FeedForward.h"
-#include "Backpropagation.h"
-#include "Optimizer/Optimizer.h"
-#include "Regularization.h"
-#include "DataProcessing.h"
+#include "FFNNode.h"
+#include "FFNLayer.h"
+#include "FFNFeedForward.h"
+#include "FFNBackpropagation.h"
+#include "FFNOptimizer/FFNOptimizer.h"
+#include "FFNRegularization.h"
+#include "FFNDataProcessing.h"
+
 
 namespace lantern {
 
@@ -399,7 +400,7 @@ namespace lantern {
                 for (auto dim : raw_dims_) {
                     total_size_ *= dim;
                 }
-                all_layer_size_->ResizeCapacity(total_size_);
+                all_layer_size_->resizeCapacity(total_size_);
                 all_layer_size_->explicitTotalItem(total_size_);
                 model_loader_.ReadAttributeAtGroup(group_name_, "TOTAL_NODE_EACH_LAYER", H5::PredType::NATIVE_UINT32, all_layer_size_->getData());
 

@@ -40,10 +40,10 @@ int main(int argc, char* argv[]){
             lantern::ffn::layer::Layer layer;
             layer.Add<lantern::ffn::node::NodeType::NOTHING>(2);
             layer.Add<lantern::ffn::node::NodeType::SWISH>(4);
-            layer.Add<lantern::ffn::node::NodeType::SWISH>(4);
+            layer.Add<lantern::ffn::node::NodeType::SWISH>(6);
             layer.Add<lantern::ffn::node::NodeType::SIGMOID>(1);
 
-            lantern::optimizer::AdaptiveMomentEstimation adam;
+            lantern::ffn::optimizer::AdaptiveMomentEstimation adam;
 
             lantern::feedforward::FeedForwardNetwork model(
                 &input,
@@ -75,6 +75,8 @@ int main(int argc, char* argv[]){
                 LANTERN_GET_FUNC_NAME(lantern::activation::Linear)
             );
 
+            return EXIT_SUCCESS;
+
             
         }else if(strcmp("load", to_lower(argv[1]).c_str()) == 0){
 
@@ -89,6 +91,8 @@ int main(int argc, char* argv[]){
             );
             std::cout << result << '\n';
 
+            return EXIT_SUCCESS;
+
         }else{
 
             std::cout << "Unknown params, type -h or --help to show help\n";
@@ -102,7 +106,7 @@ int main(int argc, char* argv[]){
 
             std::cout << "To use XORSimple executable file you must specify \n";
             std::cout << "XORSimple [action] [path]\n";
-            std::cout << "- action is action such as \"train\" or \"load\"\n";
+            std::cout << "- action is an action such as \"train\" or \"load\"\n";
             std::cout << "- path is the path where model will save or load\n";
 
             return EXIT_SUCCESS;

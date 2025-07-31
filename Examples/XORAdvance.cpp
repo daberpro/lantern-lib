@@ -18,7 +18,7 @@ int main(){
 	lantern::utility::Vector<af::array> outputs;
 	lantern::utility::Vector<af::array> parameters;
 	lantern::utility::Vector<af::array> prev_gradient;
-	lantern::optimizer::AdaptiveMomentEstimation optimizer;
+	lantern::ffn::optimizer::AdaptiveMomentEstimation optimizer;
 
 	double input_data[] = {1,1,0,0,1,0,1,0};
 	double target_data[] = {0,1,1,0};

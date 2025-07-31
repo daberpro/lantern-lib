@@ -16,7 +16,9 @@ namespace lantern {
                 GLOBAL_POOL,  // 5
                 L2_POOL,      // 6
                 FLATTEN,      // 7
-                UNKNOWN       // 8
+                UNKNOWN,       // 8
+                LEAKY_RELU,
+                SWISH
             };
 
             inline std::string GetNodeTypeAsString(NodeType node) {
@@ -29,6 +31,8 @@ namespace lantern {
                     case NodeType::GLOBAL_POOL:  return "lantern::cnn::node::NodeType::GLOBAL_POOL";
                     case NodeType::L2_POOL:      return "lantern::cnn::node::NodeType::L2_POOL";
                     case NodeType::FLATTEN:      return "lantern::cnn::node::NodeType::FLATTEN";
+                    case NodeType::LEAKY_RELU:      return "lantern::cnn::node::NodeType::LEAKY_RELU";
+                    case NodeType::SWISH:      return "lantern::cnn::node::NodeType::SWISH";
                     default:                     return "UNKNOWN LANTERN NODE TYPE!";
                 }
             }
@@ -42,6 +46,8 @@ namespace lantern {
                 else if (_str == "lantern::cnn::node::NodeType::GLOBAL_POOL")    return NodeType::GLOBAL_POOL;
                 else if (_str == "lantern::cnn::node::NodeType::L2_POOL")        return NodeType::L2_POOL;
                 else if (_str == "lantern::cnn::node::NodeType::FLATTEN")        return NodeType::FLATTEN;
+                else if (_str == "lantern::cnn::node::NodeType::LEAKY_RELU")        return NodeType::LEAKY_RELU;
+                else if (_str == "lantern::cnn::node::NodeType::SWISH")        return NodeType::SWISH;
                 else                                                        return NodeType::UNKNOWN;
             }
 

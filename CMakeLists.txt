@@ -34,13 +34,19 @@ target_include_directories(
 target_link_libraries(${PROJECT_NAME} PUBLIC AutoGradient ArrayFire::afcpu Matplot++::nodesoup Matplot++::matplot hdf5_cpp-static)
 target_precompile_headers(${PROJECT_NAME} PUBLIC pch.h)
 
-if(COPY_DATASET)
-    set(DATASET mnist)
-    foreach(dataset ${DATASET})    
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/Dataset/${dataset}"
-            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/dataset"
-        )
-    endforeach()
-endif()
+# if(COPY_DATASET)
+#     set(DATASET_DIR "${CMAKE_SOURCE_DIR}/Dataset/mnist")
+#     set(DEST_DIR "${CMAKE_CURRENT_BINARY_DIR}/dataset")
+
+#     add_custom_target(copy_dataset ALL
+#         COMMAND ${CMAKE_COMMAND} -E echo "Copying dataset..."
+#         COMMAND ${CMAKE_COMMAND} -E copy_directory
+#                 "${DATASET_DIR}"
+#                 "${DEST_DIR}"
+#         COMMENT "Copying MNIST dataset to build folder"
+#         VERBATIM
+#     )
+
+#     # Make your example project depend on it
+#     add_dependencies(${PROJECT_NAME} copy_dataset)
+# endif()

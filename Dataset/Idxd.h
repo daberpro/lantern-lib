@@ -54,7 +54,7 @@ namespace lantern {
                     uint8_t type = magic_number[2]; // get type
                     this->dimension = magic_number[3]; // get dimension
                     
-                    this->dims.ResizeCapacity(this->dimension);
+                    this->dims.resizeCapacity(this->dimension);
                     for(uint32_t i = 0; i < this->dimension; i++){
                         this->dims.push_back(
                             this->ReadBigEndian(this->file)
@@ -62,7 +62,7 @@ namespace lantern {
                         this->total_elements *= this->dims.back();
                     }
 
-                    this->data.ResizeCapacity(this->total_elements);
+                    this->data.resizeCapacity(this->total_elements);
                     uint32_t loading_bar = 0;
                     if (std::is_same_v<T,uint8_t> && type == 0x08){
                         this->file.read(reinterpret_cast<char*>(this->data.getData()),this->total_elements * sizeof(uint8_t));

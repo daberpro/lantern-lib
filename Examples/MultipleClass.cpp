@@ -65,7 +65,7 @@ int main(){
 	lantern::utility::Vector<af::array> parameters;
 	lantern::utility::Vector<af::array> prev_gradient;
 	lantern::utility::Vector<af::array> outputs;
-	lantern::optimizer::AdaptiveMomentEstimation optimizer;
+	lantern::ffn::optimizer::AdaptiveMomentEstimation optimizer;
 
 	lantern::ffn::feedforward::Initialize(
 		layer,
