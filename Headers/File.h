@@ -67,7 +67,7 @@ namespace lantern {
                     hsize_t num_attrs = current_group.getNumAttrs();
                     for (hsize_t j = 0; j < num_attrs; ++j) {
                         H5::Attribute attr = current_group.openAttribute(j);
-                        this->attributes.insert({ current_path + "/" + current_group.getObjName() + "/" + attr.getName(), attr});
+                        this->attributes.insert({ current_path + "/" + attr.getName(), attr});
                     }
                 }
             }
@@ -159,14 +159,35 @@ namespace lantern {
             /**
              * @brief Get Attribute dimension by attribute name
              */
-            lantern::utility::Vector<hsize_t> GetAttrDims(const std::string& _attr_name){
+            lantern::utility::Vector<hsize_t> GetAttrDimsAtGroup(const std::string& _group_name,const std::string& _attr_name){
                 lantern::utility::Vector<hsize_t> data;
-                if(!this->attributes.contains(_attr_name)){
-                    std::cout << "Attr ["+_attr_name+"] not found\n";
+                std::string attr_name_ = _group_name + "/" + _attr_name;
+                if(!this->attributes.contains(attr_name_)) {
+                    std::cout << "Attr [" + attr_name_ + "] not found\n";
                     data.clear();
-                    return data;   
+                    return data;
                 }
-                H5::Attribute& attribute = this->attributes.at(_attr_name);
+                H5::Attribute& attribute = this->attributes.at(attr_name_);
+                H5::DataSpace dataspace = attribute.getSpace();
+                uint32_t rank = dataspace.getSimpleExtentNdims();
+                data = lantern::utility::Vector<hsize_t>(rank);
+                dataspace.getSimpleExtentDims(data.getData());
+                data.explicitTotalItem(rank);
+                return data;
+            }
+
+            /**
+             * @brief Get Attribute dimension by attribute name
+             */
+            lantern::utility::Vector<hsize_t> GetAttrDimsAtDataset(const std::string& _dataset_name,const std::string& _attr_name) {
+                lantern::utility::Vector<hsize_t> data;
+                std::string attr_name_ = _dataset_name + "/" + _attr_name;
+                if (!this->attributes.contains(attr_name_)) {
+                    std::cout << "Attr [" + attr_name_ + "] not found\n";
+                    data.clear();
+                    return data;
+                }
+                H5::Attribute& attribute = this->attributes.at(attr_name_);
                 H5::DataSpace dataspace = attribute.getSpace();
                 uint32_t rank = dataspace.getSimpleExtentNdims();
                 data = lantern::utility::Vector<hsize_t>(rank);
@@ -606,28 +627,113 @@ namespace lantern {
             /**
              * @brief Read attribute from group, warning this only works if attribute already create or load using GetAllData()
              */
-            template <typename DataType, typename Data>
-            void ReadAttribute(
+            template <typename DataType>
+            void ReadAttributeAtDataset(
                 const std::string& _dataset_name,
                 const std::string& _attr_name,
                 const DataType& _datatype,
-                Data _data
+                std::string& _data
             ){
                 try{
                     
                     H5::Exception::dontPrint();
-                    std::string dataset_name_ = this->active_group.getObjName() + "/" + _dataset_name;
-                    std::string attr_name_ = dataset_name_ + "/" + _attr_name;
+                    std::string attr_name_ = _dataset_name + "/" + _attr_name;
 
                     if(!this->attributes.contains(attr_name_)){
                         throw H5::DataSetIException("ReadAttribute","Attribute ["+attr_name_+"] does not exists\n");
                     }
                     
                     H5::Attribute attr_ = this->attributes.at(attr_name_);
-                    attr_.write(_datatype, _data);
-                    attr_.close();
+                    attr_.read(_datatype, _data);
 
-                }catch(H5::AttributeIException& err){
+                }catch(H5::DataSetIException& err){
+                    std::cout << err.getDetailMsg() << '\n';
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            /**
+             * @brief Read attribute from group, warning this only works if attribute already create or load using GetAllData()
+             */
+            template <typename DataType, typename Data>
+            void ReadAttributeAtDataset(
+                const std::string& _dataset_name,
+                const std::string& _attr_name,
+                const DataType& _datatype,
+                Data* _data
+            ) {
+                try {
+
+                    H5::Exception::dontPrint();
+                    std::string attr_name_ = _dataset_name + "/" + _attr_name;
+
+                    if (!this->attributes.contains(attr_name_)) {
+                        throw H5::DataSetIException("ReadAttribute", "Attribute [" + attr_name_ + "] does not exists\n");
+                    }
+
+                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    attr_.read(_datatype, _data);
+
+                }
+                catch (H5::DataSetIException& err) {
+                    std::cout << err.getDetailMsg() << '\n';
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            /**
+             * @brief Read attribute from group, warning this only works if attribute already create or load using GetAllData()
+             */
+            template <typename DataType>
+            void ReadAttributeAtGroup(
+                const std::string& _group_name,
+                const std::string& _attr_name,
+                const DataType& _datatype,
+                std::string& _data
+            ) {
+                try {
+
+                    H5::Exception::dontPrint();
+                    std::string attr_name_ = _group_name + "/" + _attr_name;
+
+                    if (!this->attributes.contains(attr_name_)) {
+                        throw H5::DataSetIException("ReadAttribute", "Attribute [" + attr_name_ + "] does not exists\n");
+                    }
+
+                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    attr_.read(_datatype,_data);
+
+                }
+                catch (H5::AttributeIException& err) {
+                    std::cout << err.getDetailMsg() << '\n';
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            /**
+            * @brief Read attribute from group, warning this only works if attribute already create or load using GetAllData()
+            */
+            template <typename DataType, typename Data>
+            void ReadAttributeAtGroup(
+                const std::string& _group_name,
+                const std::string& _attr_name,
+                const DataType& _datatype,
+                Data* _data
+            ) {
+                try {
+
+                    H5::Exception::dontPrint();
+                    std::string attr_name_ = _group_name + "/" + _attr_name;
+
+                    if (!this->attributes.contains(attr_name_)) {
+                        throw H5::DataSetIException("ReadAttribute", "Attribute [" + attr_name_ + "] does not exists\n");
+                    }
+
+                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    attr_.read(_datatype, _data);
+
+                }
+                catch (H5::AttributeIException& err) {
                     std::cout << err.getDetailMsg() << '\n';
                     exit(EXIT_FAILURE);
                 }
@@ -646,8 +752,7 @@ namespace lantern {
                     }
 
                     H5::DataSet dataset_ =  this->datasets.at(_dataset_name);
-                    dataset_.read(data, TypeData);  
-                    dataset_.close();                      
+                    dataset_.read(data, TypeData);           
 
                 }catch(H5::DataSetIException& err){
                     std::cout << err.getDetailMsg() << '\n';
@@ -724,39 +829,6 @@ namespace lantern {
 
             }
 
-            ~LanternHDF5(){
-
-                try{
-                    H5::Exception::dontPrint();
-                    for(auto& [d_key,d_value] : this->datasets){
-                        d_value.close();
-                    }
-                    for(auto& [a_key,a_value] : this->attributes){
-                        a_value.close();
-                    }
-                    for(auto& [g_key,g_value] : this->groups){
-                        g_value.close();
-                    }
-                    this->file.close();
-                }catch(H5::FileIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::AttributeIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::DataSetIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::GroupIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }
-
-            }
 
 
         };

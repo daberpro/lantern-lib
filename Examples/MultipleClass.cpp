@@ -56,18 +56,18 @@ int main(){
 	lantern::utility::Vector<uint32_t> batch_index;
 	lantern::data::GetRandomSampleClassIndex<15>(batch_index,15,15,15 - 1);
 
-	lantern::layer::Layer layer;
-	layer.Add<lantern::node::NodeType::NOTHING>(2);
-	layer.Add<lantern::node::NodeType::SWISH>(15);
-	layer.Add<lantern::node::NodeType::SWISH>(15);
-	layer.Add<lantern::node::NodeType::LINEAR>(3);
+	lantern::ffn::layer::Layer layer;
+	layer.Add<lantern::ffn::node::NodeType::NOTHING>(2);
+	layer.Add<lantern::ffn::node::NodeType::SWISH>(15);
+	layer.Add<lantern::ffn::node::NodeType::SWISH>(15);
+	layer.Add<lantern::ffn::node::NodeType::LINEAR>(3);
 
 	lantern::utility::Vector<af::array> parameters;
 	lantern::utility::Vector<af::array> prev_gradient;
 	lantern::utility::Vector<af::array> outputs;
-	lantern::optimizer::AdaptiveMomentEstimation optimizer;
+	lantern::ffn::optimizer::AdaptiveMomentEstimation optimizer;
 
-	lantern::feedforward::Initialize(
+	lantern::ffn::feedforward::Initialize(
 		layer,
 		parameters,
 		prev_gradient,
@@ -88,7 +88,7 @@ int main(){
 
 			outputs[0] = input.row(selected_index).T();
 			target_output = target.row(selected_index).T();
-			lantern::feedforward::FeedForward(
+			lantern::ffn::feedforward::FeedForward(
 				layer,
 				outputs,
 				parameters
@@ -99,15 +99,13 @@ int main(){
 			std::cout << "Loss : " << loss << '\n';
 
 			prev_gradient.back() = lantern::derivative::CrossEntropySoftMax(output, target_output);
-			lantern::backprop::Backpropagate(
+			lantern::ffn::backprop::Backpropagate(
 				layer,
 				parameters,
 				prev_gradient,
 				outputs,
 				optimizer,
 				batch_size
-				// ,lantern::regularization::L1Regularization
-				// ,0.7	
 			);
 		
 		}
@@ -119,7 +117,7 @@ int main(){
 
 	for(uint32_t i = 0; i < input.dims(0); i++){
 		outputs[0] = input.row(i).T();
-		lantern::feedforward::FeedForward(
+		lantern::ffn::feedforward::FeedForward(
 			layer,
 			outputs,
 			parameters

@@ -134,7 +134,7 @@ namespace lantern
     {
         if (!objective.IsGradientInit())
         {
-            objective.gradient = af::constant(1.0f, max(objective.total_gradient_size, 1));
+            objective.gradient = af::constant(1.0f, std::max(objective.total_gradient_size, (uint32_t) 1));
             objective.SetGradientInit(true);
         }
         switch (objective.op)
@@ -186,7 +186,7 @@ namespace lantern
         Node *a = objective.parents[0], *b = nullptr;
         if (!a->IsGradientInit())
         {
-            a->gradient = af::constant(1.0f, max(a->total_gradient_size, 1));
+            a->gradient = af::constant(1.0f, std::max(a->total_gradient_size, (uint32_t) 1));
             a->SetGradientInit(true);
         }
 
@@ -196,7 +196,7 @@ namespace lantern
             b = objective.parents[1];
             if (!b->IsGradientInit())
             {
-                b->gradient = af::constant(1.0f, max(b->total_gradient_size, 1));
+                b->gradient = af::constant(1.0f, std::max(b->total_gradient_size, (uint32_t) 1));
                 b->SetGradientInit(true);
             }
         }

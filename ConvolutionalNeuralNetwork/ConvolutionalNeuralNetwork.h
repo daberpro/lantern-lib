@@ -1,0 +1,5 @@
+#include "CNNLayer.h"
+#include "CNNNode.h"
+#include "CNNOptimizer/CNNOptimizer.h"
+#include "CNNExperimentalFeedForward.h"
+#include "CNNBackPropagation.h"

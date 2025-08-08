@@ -16,34 +16,44 @@ namespace lantern {
             uint32_t capacity = 0, m_size = 0;
             T* data = nullptr;
 
-            void ResizeCapacity(const uint32_t& new_capacity){
+        public:
+
+            void resizeCapacity(const uint32_t& new_capacity) {
                 // set default capacity size when resize
                 T* new_container = (T*)::operator new((new_capacity) * sizeof(T));
                 uint32_t i = 0;
-                for(; i < this->m_size; i++){
+                for (; i < this->m_size; i++) {
                     new(&new_container[i]) T(std::move(this->data[i]));
                     this->data[i].~T();
                 }
-                ::operator delete(this->data);
+                if (this->data != nullptr) {
+                    ::operator delete(this->data);
+                }
                 this->data = new_container;
                 this->capacity = new_capacity;
             }
 
-            void ResizeCapacity(const uint32_t& new_capacity,const T& all_default_value){
+            void resizeCapacity(const uint32_t& new_capacity, const T& all_default_value) {
                 // set default capacity size when resize
                 T* new_container = (T*)::operator new((new_capacity) * sizeof(T));
                 uint32_t i = 0;
+                for (; i < this->m_size; i++) {
+                    new(&new_container[i]) T(std::move(this->data[i]));
+                    this->data[i].~T();
+                }
+                if (this->data != nullptr) {
+                    ::operator delete(this->data);
+                }
+
                 this->data = new_container;
                 this->capacity = new_capacity;
                 // fill the data buffer with default value
                 i = 0;
-                for(; i < this->capacity; i++){
+                for (; i < this->capacity; i++) {
                     this->data[i] = all_default_value;
                 }
                 this->m_size = this->capacity;
             }
-
-        public:
 
             struct Iterator {
 
@@ -106,7 +116,7 @@ namespace lantern {
              * @param init_capacity 
              */
             Vector(const uint32_t& init_capacity): capacity(init_capacity){
-                this->ResizeCapacity(this->capacity);
+                this->resizeCapacity(this->capacity);
             }
 
             /**
@@ -116,7 +126,7 @@ namespace lantern {
              * @param all_default 
              */
             Vector(const uint32_t& init_capacity,const T& all_default): capacity(init_capacity){
-                this->ResizeCapacity(this->capacity, all_default);
+                this->resizeCapacity(this->capacity, all_default);
             }
 
             /**
@@ -163,7 +173,7 @@ namespace lantern {
              * 
              */
             Vector(){
-                this->ResizeCapacity(this->capacity + 10);
+                this->resizeCapacity(this->capacity + 10);
             }
 
             /**
@@ -175,6 +185,14 @@ namespace lantern {
                 return this->capacity;
             }
 
+            template <typename... Args>
+            void emplace_back(Args&&... data) {
+                if (this->m_size >= this->capacity) {
+                    this->resizeCapacity(this->capacity + 10);
+                }
+                new(&this->data[this->m_size++]) T(std::forward<Args>(data)...);
+            }
+
             /**
              * @brief push data into utility vector
              * 
@@ -182,7 +200,7 @@ namespace lantern {
              */
             void push_back(T&& data){
                 if(this->m_size >= this->capacity){
-                    this->ResizeCapacity(this->capacity + 10);
+                    this->resizeCapacity(this->capacity + 10);
                 }
                 new(&this->data[this->m_size++]) T(std::move(data));
             }
@@ -194,7 +212,7 @@ namespace lantern {
              */
             void push_back(const T& data){
                 if(this->m_size >= this->capacity){
-                    this->ResizeCapacity(this->capacity + 10);
+                    this->resizeCapacity(this->capacity + 10);
                 }
                 new(&this->data[this->m_size++]) T(data);
             }
@@ -305,7 +323,7 @@ namespace lantern {
              * 
              * @return uint32_t 
              */
-            uint32_t size(){
+            uint32_t size() const {
                 return this->m_size;
             }
 
@@ -313,21 +331,7 @@ namespace lantern {
                 this->clear();
             }
 
-            /**
-             * @brief Get data at index
-             * 
-             * @param index 
-             * @return const T& 
-             */
-            const T& operator [](const uint32_t& index) const{
-                if((index < 0 )|| (index > this->m_size)){
-                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
-                    __debugbreak();
-                    exit(EXIT_FAILURE);
-                }
-                return this->data[index];
-            }
-
+           
 
             /**
              * @brief Get data at index
@@ -338,7 +342,10 @@ namespace lantern {
             T& operator [](const uint32_t& index) {
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
-                    __debugbreak();
+                    std::cout << "Call stack:\n";
+                    for (const auto& entry : std::stacktrace::current()) {
+                        std::cout << entry << '\n';
+                    }
                     exit(EXIT_FAILURE);
                 }
                 return this->data[index];
@@ -353,7 +360,10 @@ namespace lantern {
             const T& operator [](const int32_t& index) const{
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
-                    __debugbreak();
+                    std::cout << "Call stack:\n";
+                    for (const auto& entry : std::stacktrace::current()) {
+                        std::cout << entry << '\n';
+                    }
                     exit(EXIT_FAILURE);
                 }
                 return this->data[index];
@@ -368,7 +378,10 @@ namespace lantern {
             T& operator [](const int32_t& index) {
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
-                    __debugbreak();
+                    std::cout << "Call stack:\n";
+                    for (const auto& entry : std::stacktrace::current()) {
+                        std::cout << entry << '\n';
+                    }
                     exit(EXIT_FAILURE);
                 }
                 return this->data[index];
@@ -452,7 +465,7 @@ namespace lantern {
              * 
              * @return T* 
              */
-            T* getData(){
+            T* getData() const {
                 return this->data;
             }
 
@@ -465,14 +478,29 @@ namespace lantern {
                 for (uint32_t i = 0; i < this->m_size; i++) {
                     this->data[i].~T();
                 }
-                ::operator delete(this->data);
+                if (this->data != nullptr) {
+                    ::operator delete(this->data);
+                }
                 
                 this->m_size = 0;
                 this->capacity = 0;
                 this->data = nullptr;
             }
 
+            T at(const uint32_t& index){
+                if((index < 0 )|| (index > this->m_size)){
+                    std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
+                    std::cout << "Call stack:\n";
+                    for (const auto& entry : std::stacktrace::current()) {
+                        std::cout << entry << '\n';
+                    }
+                    exit(EXIT_FAILURE);
+                }
+                return this->data[index];
+            }
+
         };
+
 
         /**
          * @brief Generate rnadom normal distribution vector

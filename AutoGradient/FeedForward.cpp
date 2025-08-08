@@ -112,7 +112,7 @@ namespace lantern
             current_node = fix_position_node[i];
             if (!current_node->IsGradientInit())
             {
-                current_node->gradient = af::constant(1.0f, max(current_node->total_gradient_size, 1));
+                current_node->gradient = af::constant(1.0f, std::max(current_node->total_gradient_size, (uint32_t) 1));
                 current_node->SetGradientInit(true);
             }
             UpdateCalculation(current_node);
