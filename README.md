@@ -1,5 +1,7 @@
 # Lantern
-### C++ Lib for deep learning
+**A Lightweight Neural Network Library in C++ — Built from Scratch**
+> From-scratch C++ neural network library with custom autograd, ArrayFire acceleration, and a focus on transparency.
+
 ![Test Build](https://github.com/daberpro/lantern-lib/actions/workflows/cmake-single-platform.yml/badge.svg)
 ![GitHub release](https://img.shields.io/github/v/release/daberpro/lantern-lib?include_prereleases)
 ![GitHub](https://img.shields.io/github/license/daberpro/lantern-lib)
@@ -10,215 +12,192 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/daberpro/lantern-lib)
 ![GitHub forks](https://img.shields.io/github/forks/daberpro/lantern-lib)
 
-## About Lantern
-The lantern library is a library for developing deep learning written using the c++ programming language, built on the arrayfire library as a library for processing tensors.
-> **⚠️ Danger:** This is a critical warning message! \
-> lantern-lib still in progress, and this lib still poor feature
 
-If you have any suggestions or improvements, feel free to contact me through the channels below.
-| 📧 Email                   | 🗨️ Discord      |
-|---------------------------|-----------------|
-| daber.coding@gmail.com    | daberdev        |
+Lantern is a deep learning library written entirely in **C++**, built on top of **ArrayFire** for fast tensor operations.  
+The goal is to create a fully transparent neural network framework where every detail — from weight initialization to backpropagation — is visible and customizable.  
 
-## # Getting Started
-### > Build From Scratch
-lantern was build on it's own component, but for several feature like plot and tensor
-lantern use external dependecies like arrayfire and matplot++
-to build lantern yout must have
-1. ArrayFire
-2. Matplot++
-3. HDF5 (Build with c++ enable)
+⚠️ **Warning**: `latern-lib` is still under development and currently has limited features.  
+If you have suggestions or improvements, feel free to contact me:  
+📧 **Email**: `daber.coding@gmail.com`  
+💬 **Discord**: `daberdev`  
 
-lantern use CMake for build, so make sure you have cmake already installed on your 
-device, the cmake version was use on this library is 4.0, and this lib was develop on Windows OS
-using Visual Studio 2022
+---
 
-### > Feed Forward Neural Network (FFN)
-lantern has a classic neural network which establish using perceptron neural network \
-and lantern has several type of optimization such as
-- Gradient Descent (GD)
-- Root Mean Squared Propagation (RMSProp)
-- Adaptive Gradient Descent (AdaGrad)
-- Adaptive Gradient Estimation (Adam)
+## ✨ Features  
+- Feedforward neural networks (Perceptron-based)  
+- Reverse-mode automatic differentiation (custom autograd engine)  
+- Multiple optimizers:  
+  - Gradient Descent (GD)  
+  - RMSProp  
+  - AdaGrad  
+  - Adam (Adaptive Moment Estimation)  
+- Activations: Swish, Sigmoid, Softmax (full Jacobian)  
+- Loss functions: Sum Squared Residual, Cross Entropy  
+- Weight initialization: Normal Distribution + Xavier/Glorot initialization  
+- Mini-batch and single-sample training  
+- Explicit math — no “magic box” code  
 
-lantern use Normal Distribution to initalize weight and bias and optimize the initalize weights and bias using Xavier/Glorot Initalization
+---
 
-#### Example
-this is an example of Multiple Class model, i know i should use the loss function BinaryCrossEntropy but using Cross Entropy also works well 
+## 🛠 Getting Started  
 
-Example of Multiple Class using lantern-lib
-=======
-## # Example Code
-this a simple example of using lantern-lib to classify multiple class
+### Dependencies  
+To build Lantern from source, you will need:  
+- [ArrayFire](https://arrayfire.com/)  
+- [Matplot++](https://alandefreitas.github.io/matplotplusplus/)  
+- [HDF5](https://www.hdfgroup.org/) (with C++ enabled)  
+
+Lantern uses **CMake** for building. Development is done on **Windows** using **Visual Studio 2022**, but the code should be portable.  
+Minimum CMake version: **4.0**  
+
+---
+
+## 🧪 Example: XOR Training  
+Here’s a minimal example to train a neural network on the XOR problem:  
+
 ```cpp
 #include "../pch.h"
 #include "../Headers/Logging.h"
 #include "../FeedForwardNetwork/FeedForwardNetwork.h"
 
+int main() {
+    af::setSeed(static_cast<uint64_t>(std::time(nullptr)));
 
-int main(){
+    // XOR input and target data
+    double input_data[] = {
+        1.0, 1.0, 0.0, 0.0,
+        1.0, 0.0, 1.0, 0.0
+    };
 
-	af::info();
-	std::cout << "\n\n";
-	af::setSeed(static_cast<uint64_t>(std::time(nullptr)));
+    double target_data[] = {
+        0.0, 1.0, 1.0, 0.0
+    };
 
-	// 45 samples 2 features = 90 elements
-	double input_data[] = {
-		// Class 0 Col 1
-		1.0, 1.2, 0.8, 1.1, 1.3, 0.9, 1.2, 1.0, 0.7, 1.1, 1.0, 0.8, 1.2, 1.1, 0.9,
-		// Class 1 Col 1
-		3.0, 3.2, 2.9, 3.1, 3.3, 3.0, 3.1, 3.2, 3.0, 3.1, 2.9, 3.3, 3.0, 3.1, 2.8,
-		// Class 2 Col 1
-		5.0, 5.2, 4.9, 5.1, 5.3, 5.0, 5.1, 4.8, 5.2, 5.0, 5.1, 4.9, 5.2, 5.0, 5.1,
+    af::array input = af::array(4, 2, input_data);
+    af::array target = af::array(4, 1, target_data);
 
-		// Class 0 Col 2
-		2.0, 1.9, 2.2, 2.1, 2.3, 1.8, 2.4, 1.7, 2.0, 1.9, 2.1, 1.9, 2.2, 2.0, 2.1,
-		// Class 1 Col 2
-		3.5, 3.7, 3.4, 3.6, 3.8, 3.2, 3.9, 3.5, 3.3, 3.4, 3.6, 3.4, 3.7, 3.3, 3.5,
-		// Class 2 Col 2
-		1.0, 1.1, 0.9, 1.2, 0.8, 1.3, 1.0, 1.1, 0.9, 0.8, 1.1, 1.2, 1.0, 1.2, 0.9
-	};
+    // Define network architecture
+    lantern::ffn::layer::Layer layer;
+    layer.Add<lantern::ffn::node::NodeType::NOTHING>(2);
+    layer.Add<lantern::ffn::node::NodeType::SWISH>(4);
+    layer.Add<lantern::ffn::node::NodeType::SWISH>(6);
+    layer.Add<lantern::ffn::node::NodeType::SIGMOID>(1);
 
-	// 45 samples 3 classes = 135 elements
-	double target_data[] = {
+    // Optimizer
+    lantern::ffn::optimizer::AdaptiveMomentEstimation adam;
 
-		// Class 0: one-hot [1, 0, 0] Col 1
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		// Class 1: one-hot [0, 1, 0] Col 1
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		// Class 2: one-hot [0, 0, 1] Col 1
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // Create and train model
+    lantern::feedforward::FeedForwardNetwork model(
+        &input,   // Pointer to training input data
+        &target,  // Pointer to training target data
+        &layer,   // Pointer to the defined layer structure
+        {4},      // Vector of class index boundaries (only 1 group of 4 samples here)
+        1e-08,    // Learning rate
+        200       // Number of epochs
+    );
 
-		// Class 0: one-hot [1, 0, 0] Col 2
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		// Class 1: one-hot [0, 1, 0] Col 2
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		// Class 2: one-hot [0, 0, 1] Col 2
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    model.Train<4>(
+        adam,
+        lantern::loss::SumSquareResidual,
+        lantern::derivative::SumSquareResidual,
+        lantern::activation::Linear
+    );
 
-		// Class 0: one-hot [1, 0, 0] Col 3
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		// Class 1: one-hot [0, 1, 0] Col 3
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		// Class 2: one-hot [0, 0, 1] Col 3
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-	};
+    // Prediction
+    std::cout << "Prediction Result:\n";
+    af::array result;
+    model.Predict(
+        input,
+        result,
+        lantern::activation::Linear
+    );
+    std::cout << result << '\n';
 
-	af::array input = af::array(45, 2, input_data);
-	af::array target = af::array(45, 3, target_data);
-
-	/**
-	 * Create Layer with 
-	 * 2 -> 15 -> 15 -> 3
-	 * NOTHING -> SWISH -> SWISH -> LINEAR
-	 */
-	lantern::ffn::layer::Layer layer;
-	layer.Add<lantern::node::NodeType::NOTHING>(2);
-	layer.Add<lantern::node::NodeType::SWISH>(15);
-	layer.Add<lantern::node::NodeType::SWISH>(15);
-	layer.Add<lantern::node::NodeType::LINEAR>(3);
-
-	/**
-	 * Using lantern AdaptiveMomenEstimation (ADAM) optimizer
-	 * with default value
-	 */
-	lantern::optimizer::AdaptiveMomentEstimation optimizer;
-
-	/**
-	 * Create model using FeedForwardNetwork Class and pass
-	 * - input pointer 
-	 * - target pointer
-	 * - layer pointer
-	 * - size of each class for example (15 class 1, 15 class 2, 15 class 3)
-	 * 	 because the class index will start from 0 we need to adjust the last class size
-	 * 	 to substract it with 1
-	 * - minum treshold when the loss in training are <= this value, the training will stop
-	 * - number of epoch
-	 */
-	lantern::feedforward::FeedForwardNetwork model(
-		&input,
-		&target,
-		&layer,
-		{15,15,15-1},
-		1e-08,
-		200
-	);
-
-	/**
-	 * ==========================================================================
-	 * Train the model
-	 * ==========================================================================
-	 */
-
-	/**
-	 * Train the model, the template value 15 is a number of batch will use in training
-	 * and then the pass value is
-	 * - optimizer that we have already created
-	 * - loss function, we use CrossEntropy because we want to do classify
-	 * - output function (by default is Linear) we want the output of the model was feed to SoftMax First
-	 * 	 this happend because our model just use Linear at the output layer, because if we just use SoftMax directly
-	 * 	 the model cannot convergen
-	 */
-	model.Train<15>(
-		optimizer,
-		lantern::loss::CrossEntropy,
-		lantern::derivative::CrossEntropySoftMax,
-		lantern::probability::SoftMax
-	);
-
-	/**
-	 * Show all parameters that model already optimize
-	 */
-	for (auto param : model.GetParameters()) {
-		std::cout << param << '\n';
-	}
-
-	/**
-	 * Create test result to show the result
-	 * we just feed the model with sam input to see all output
-	 * the Predict() function just take input data, and an af::array to save the output result prediction
-	 * and the output function (default is Linear) but we use SoftMax
-	 */
-	af::array test_results;
-	model.Predict(
-		input,
-		test_results,
-		lantern::probability::SoftMax
-	);
-	std::cout << test_results << '\n'; // then we print the result, which the overload function for this define in Logging.h
-	
-	/**
-	 * After that we save the model, lantern by default use HDF5 to manage
-	 * all data from model, teh value we pass to the SaveModel() function is
-	 * - path where the model will save to with extension .h5
-	 * - then the name of output function we use, u can use LANTERN_GET_FUNC_NAME(lantern::probability::SoftMax) macro
-	 */
-	model.SaveModel(
-		"Result.h5",
-		"lantern::probability::SoftMax"
-	);
-
-	/**
-	 * ==========================================================================
-	 * Load the model
-	 * ==========================================================================
-	 */
-
-	/**
-	 * Load the model we have already save
-	 */
-	model.LoadModel("Result.h5");
-	af::array predict_result;
-	/**
-	 * Then predict again 
-	 */
-	model.Predict(
-		input,
-		predict_result,
-		lantern::probability::SoftMax
-	);
-	std::cout << predict_result << '\n';
-
-	return 0;
+    return EXIT_SUCCESS;
 }
-```
+````
+
+---
+
+## 📖 Line-by-Line Explanation
+
+1. **Includes**
+
+   * `pch.h` — Precompiled headers to speed up build times
+   * `Logging.h` — Lantern’s logging utility
+   * `FeedForwardNetwork.h` — The main neural network class
+
+2. **Set Random Seed**
+
+   ```cpp
+   af::setSeed(static_cast<uint64_t>(std::time(nullptr)));
+   ```
+
+   Ensures randomness in weight initialization, changing each run.
+
+3. **Prepare Training Data**
+
+   * `input_data`: Each column is a feature, each row is a sample
+   * `target_data`: Expected outputs for each input
+
+4. **Convert to ArrayFire arrays**
+
+   * `af::array input` — Shape `(4, 2)` → 4 samples × 2 features
+   * `af::array target` — Shape `(4, 1)` → 4 samples × 1 label
+
+5. **Build Network Layers**
+
+   ```cpp
+   layer.Add<lantern::ffn::node::NodeType::NOTHING>(2); // Input layer
+   layer.Add<lantern::ffn::node::NodeType::SWISH>(4);   // Hidden layer 1
+   layer.Add<lantern::ffn::node::NodeType::SWISH>(6);   // Hidden layer 2
+   layer.Add<lantern::ffn::node::NodeType::SIGMOID>(1); // Output layer
+   ```
+
+   Defines layer sizes and activation functions.
+
+6. **Choose Optimizer**
+
+   ```cpp
+   lantern::ffn::optimizer::AdaptiveMomentEstimation adam;
+   ```
+
+7. **Create Model**
+
+   ```cpp
+   lantern::feedforward::FeedForwardNetwork model(
+       &input, &target, &layer,
+       {4},      // Class index boundaries
+       1e-08,    // Learning rate
+       200       // Epochs
+   );
+   ```
+
+   `{4}` means: “Class 0 samples end at index 4.”
+   If you had: `{15, 31}`, it means:
+
+   * Class 0 ends at index 15
+   * Class 1 ends at index 31
+
+8. **Train the Model**
+
+   ```cpp
+   model.Train<4>(
+       adam,
+       lantern::loss::SumSquareResidual,
+       lantern::derivative::SumSquareResidual,
+       lantern::activation::Linear
+   );
+   ```
+
+   `<4>` is the batch size for training.
+
+9. **Predict & Print Results**
+
+   ```cpp
+   model.Predict(input, result, lantern::activation::Linear);
+   std::cout << result << '\n';
+   ```
+
+---
+
