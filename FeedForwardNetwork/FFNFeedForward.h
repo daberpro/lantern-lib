@@ -7,6 +7,10 @@
 #include "FFNLayer.h"
 #include "FFNOptimizer/FFNOptimizer.h"
 
+/**
+ * @defgroup LanternFeedForward FeedForward function for lantern feed
+ */
+
 namespace lantern
 {
 
@@ -22,8 +26,9 @@ namespace lantern
              * @param _layer
              * @param _outputs
              * @param _parameters
+             * @ingroup LanternFeedForward
              */
-            void FeedForward(
+            inline void FeedForward(
                 lantern::ffn::layer::Layer &_layer,
                 lantern::utility::Vector<af::array> &_outputs,
                 lantern::utility::Vector<af::array> &_parameters)
@@ -35,6 +40,7 @@ namespace lantern
 
                 for (uint32_t current_layer = 0; current_layer < (*all_layer_sizes).size() - 1; current_layer++)
                 {
+                    
 
                     prev_output = _outputs[current_layer];
                     parameters = _parameters[current_layer];
@@ -89,8 +95,18 @@ namespace lantern
                 }
             }
 
+            /**
+             * @brief Initalize the layer and FFN parameters
+             * @tparam Optimizer 
+             * @param _layer 
+             * @param _parameters 
+             * @param _prev_gradient 
+             * @param _outputs 
+             * @param _optimizer 
+             * @ingroup LanternFeedForward
+             */
             template <typename Optimizer = lantern::ffn::optimizer::AdaptiveMomentEstimation>
-            void Initialize(
+            inline void Initialize(
                 lantern::ffn::layer::Layer &_layer,
                 lantern::utility::Vector<af::array> &_parameters,
                 lantern::utility::Vector<af::array> &_prev_gradient,
@@ -101,10 +117,10 @@ namespace lantern
                 auto &vector_velocity = _optimizer.GetVectorVelocity();
                 auto *all_node_type = _layer.GetAllNodeTypeOfLayer();
 
-                _parameters.clear();
-                _prev_gradient.clear();
-                stack_previous_gradient.clear();
-                vector_velocity.clear();
+                _parameters.clean();
+                _prev_gradient.clean();
+                stack_previous_gradient.clean();
+                vector_velocity.clean();
 
                 auto *layers = _layer.GetAllLayerSizes();
                 for (uint32_t i = 0; i < (*layers).size() - 1; i++)
@@ -113,31 +129,41 @@ namespace lantern
                         af::randn(
                             (*layers)[i + 1],
                             (*layers)[i] + 1,
-                            f64));
+                            f64
+                        )
+                    );
                     stack_previous_gradient.push_back(
                         af::constant(
                             0.0f,
                             (*layers)[i + 1],
                             (*layers)[i] + 1,
-                            f64));
+                            f64
+                        )
+                    );
                     vector_velocity.push_back(
                         af::constant(
                             0.0f,
                             (*layers)[i + 1],
                             (*layers)[i] + 1,
-                            f64));
+                            f64
+                        )
+                    );
                     _prev_gradient.push_back(
                         af::constant(
                             0.0f,
                             (*layers)[i],
                             1,
-                            f64));
+                            f64
+                        )
+                    );
                     _outputs.push_back(
                         af::constant(
                             0.0f,
                             (*layers)[i],
                             1,
-                            f64));
+                            f64
+                        )
+                    );
 
                     switch ((*all_node_type)[i])
                     {
@@ -147,7 +173,8 @@ namespace lantern
                         lantern::init::XavierNormInit(
                             (*layers)[i],
                             (*layers)[i + 1],
-                            _parameters.back());
+                            _parameters.back()
+                        );
                         break;
                     }
                     case lantern::ffn::node::NodeType::RELU:
@@ -157,7 +184,8 @@ namespace lantern
                         lantern::init::XavierUnifInit(
                             (*layers)[i],
                             (*layers)[i + 1],
-                            _parameters.back());
+                            _parameters.back()
+                        );
                         break;
                     }
                     }

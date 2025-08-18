@@ -3,8 +3,10 @@
 #include "../Headers/Function.h"
 #include "../Headers/Initialize.h"
 #include "../Headers/Vector.h"
+#include "../Headers/DataProcessing.h"
 //#include "../Headers/Logging.h"
 #include "../Headers/File.h"
+#include "../Headers/ModelManager.h"
 
 #include "FFNNode.h"
 #include "FFNLayer.h"
@@ -12,13 +14,20 @@
 #include "FFNBackpropagation.h"
 #include "FFNOptimizer/FFNOptimizer.h"
 #include "FFNRegularization.h"
-#include "FFNDataProcessing.h"
 
+
+/**
+ * @defgroup LanternFFNWrapper A wrapper for FFN model
+ */
 
 namespace lantern {
 
     namespace feedforward {
 
+        /**
+         * @brief Feed forward network class, a wrapper for lantern ffn
+         * @ingroup LanternFFNWrapper
+         */
         class FeedForwardNetwork{
         private:
             lantern::utility::Vector<lantern::utility::Vector<double>> loaded_model_params;
@@ -27,17 +36,22 @@ namespace lantern {
             lantern::utility::Vector<af::array> outputs;
             lantern::utility::Vector<uint32_t> batch_index;
 
+            lantern::modelmanager::ModelManager model_manager;
+
             af::array *input_data, *target_data;
             lantern::ffn::layer::Layer *layer;
             lantern::utility::Vector<uint32_t> each_class_size;
 
             bool is_loaded_model = false;
 
-            uint32_t epoch = 1000;
+            uint32_t epoch = 100;
             uint32_t current_iter = 0;
             double loss = 1, min_treshold = 0;
             af::array output, target_output;
 
+            /**
+             * @brief Chek all requirements before init network
+             */
             void CheckAllRequirements() {
                 if (this->input_data == nullptr) {
                     throw std::runtime_error("Input data cannot be empty");
@@ -76,53 +90,85 @@ namespace lantern {
                 const uint32_t& _epoch
             ) : input_data(_input), target_data(_output), layer(_layer), each_class_size(_each_class_size), min_treshold(_treshold), epoch(_epoch){}
 
+            /**
+             * @brief Get parameters from parameters (Weights,Bias)
+             * @return lantern::utility::Vector<af::array>
+             */
             lantern::utility::Vector<af::array> GetParameters(){
                 return this->parameters;
             }
 
+            /**
+             * @brief Get output of each layer
+             * @return lantern::utility::Vector<af::array>
+             */
             lantern::utility::Vector<af::array> GetOutputsEachLayer() {
                 return this->outputs;
             }
 
+            /**
+             * @brief Set input to feed to network
+             * @param _input_data 
+             */
             void SetInput(af::array* _input_data){
                 this->input_data = _input_data;
             }
 
+            /**
+             * @brief Set target to adjust the output fromnetwork
+             * @param _target_data 
+             */
             void SetTarget(af::array* _target_data){
                 this->target_data = _target_data;
             }
 
+            /**
+             * @brief Set layer pointer
+             * @param _layer 
+             */
             void SetLayer(lantern::ffn::layer::Layer* _layer){
                 this->layer = _layer;
             }
 
+            /**
+             * @brief Set each class size, this is a size of each class in dataset like 5 cats and 3 dogs become {5,3-1}, we substract the last ith 1 because the index start at 0
+             * @param _each_class_size 
+             */
             void SetEachClassSize(std::initializer_list<uint32_t> _each_class_size){
                 this->each_class_size = _each_class_size;
             }
 
+            /**
+             * @brief Set minimum treshold for loss during training
+             * @param _treshold 
+             */
             void SetMinimumTreshold(const double& _treshold){
                 this->min_treshold = _treshold;
             }
 
+            /**
+             * @brief Set epoch to train
+             * @param _epoch 
+             */
             void SetEpoch(const uint32_t& _epoch){
                 this->epoch = _epoch;
             }
 
-            /// <summary>
-            /// Training network 
-            /// </summary>
-            /// <typeparam name="Optimizer"></typeparam>
-            /// <typeparam name="LossFunction"></typeparam>
-            /// <typeparam name="DerivativeLoss"></typeparam>
-            /// <typeparam name="OutFunction"></typeparam>
-            /// <typeparam name="batch_size"></typeparam>
-            /// <param name="_optimizer">, Set optimizer from lantern::optimizer namespace</param>
-            /// <param name="_loss_func">, Set loss function from lantern::loss:: namespace</param>
-            /// <param name="_derivative_loss">, Set derivative loss from lantern::derivative namespace</param>
-            /// <param name="_output_func">, Set out function from lantern::activation or lantern::probability namespace</param>
+            /**
+             * @brief Train the network
+             * @tparam Optimizer 
+             * @tparam LossFunction 
+             * @tparam DerivativeLoss 
+             * @tparam OutFunction 
+             * @tparam batch_size 
+             * @param _optimizer 
+             * @param _loss_func 
+             * @param _derivative_loss 
+             * @param _output_func 
+             */
             template <
                 uint32_t batch_size = 10,
-                typename Optimizer = lantern::optimizer::AdaptiveMomentEstimation,
+                typename Optimizer = lantern::ffn::optimizer::AdaptiveMomentEstimation,
                 typename LossFunction = std::function<double(af::array& output, af::array& target)>,
                 typename DerivativeLoss = std::function<af::array(af::array&)>,
                 typename OutFunction = std::function<af::array(af::array&, af::array&)>
@@ -139,7 +185,7 @@ namespace lantern {
                     this->CheckAllRequirements();
                 }
                 catch (std::runtime_error& err) {
-                    std::cerr << err.what() << '\n';
+                    std::cerr << "lantern::ffn::FeedForwardNetwork::Train<>(), Error " << err.what() << '\n';
                     exit(EXIT_FAILURE);
                 }
 
@@ -227,13 +273,13 @@ namespace lantern {
 
             }
 
-            /// <summary>
-            /// Predict the given dataset from the training results
-            /// </summary>
-            /// <typeparam name="OutFunction"></typeparam>
-            /// <param name="_inputs"></param>
-            /// <param name="_results"></param>
-            /// <param name="_out_function"></param>
+            /**
+             * @brief Predict the given input
+             * @tparam OutFunction 
+             * @param _inputs 
+             * @param _results 
+             * @param _out_function 
+             */
             template <typename OutFunction = std::function<af::array(af::array&)>>
             void Predict(
                 const af::array& _inputs, 
@@ -259,209 +305,46 @@ namespace lantern {
                 }
             }
 
-            /// <summary>
-            /// Save Model to path with output function name, default value of output function name is "lantern::activation::Linear"
-            /// </summary>
-            /// <param name="_path"></param>
-            /// <param name="OutFuncName"></param>
+            /**
+             * @brief Save model with HDF5
+             * @param _path 
+             * @param OutFuncName 
+             */
             void SaveModel(const std::string& _path,const std::string& OutFuncName = "lantern::activation::Linear") {
                 
-                lantern::file::LanternHDF5 model_saver_(_path);
-                model_saver_.Create();
-                model_saver_.GetAllData();
-                
-                /**
-                 * Parameter info
-                 * L{n} is a parameter at n layer
-                 * 
-                 * path "/Parameters" is a folder which contain all result of training parameters
-                 * 
-                */
+                this->is_loaded_model = false;
+                this->model_manager.LoadFile(_path);
+                this->model_manager.Create();
+                this->model_manager.GetAllData();
 
-                // first create the group or folder for hold all parameters
-                model_saver_.CreateGroup("/Parameters");
-                model_saver_.SetActiveGroup("/Parameters"); // then set the group to be active group
-
-                std::string label_ = "param_";
-                std::string dataspace_name_;
-                std::string dataset_name_;
-                std::string output_node_type_;
-                uint32_t index = 0, rank = 1;
-                double* data = nullptr;
-                H5::StrType strType(H5::PredType::C_S1,H5T_VARIABLE);
-                lantern::utility::Vector<lantern::ffn::node::NodeType>* all_layer_type_ = this->layer->GetAllNodeTypeOfLayer();
-
-                for(af::array& param : this->parameters){
-
-                    data = param.host<double>();
-                    dataspace_name_ = label_+std::to_string(index);
-                    output_node_type_ = "OUTPUT_FUNCTION_SPACE_"+std::to_string(index);
-                    dataset_name_ = std::string("L") + std::to_string(index);
-
-                    // create dataspace for each array data
-                    rank = param.numdims();
-                    model_saver_.CreateDataSpace(dataspace_name_,rank,{
-                        static_cast<uint64_t>(param.dims(0)),
-                        static_cast<uint64_t>(param.dims(1)),
-                        static_cast<uint64_t>(param.dims(2)),
-                        static_cast<uint64_t>(param.dims(3))
-                    });
-
-                    // create dataset for param
-                    model_saver_.CreateDataset(dataset_name_, dataspace_name_, H5::PredType::NATIVE_DOUBLE);
-                    model_saver_.WriteDataset(dataset_name_, data, H5::PredType::NATIVE_DOUBLE);
-
-                    // create attribute to save node type on this layer
-                    model_saver_.CreateScalarDataSpace(output_node_type_);
-                    model_saver_.CreateAttributeAtDataset(
-                        dataset_name_,
-                        output_node_type_,
-                        "OUTPUT_FUNCTION_"+dataset_name_,
-                        strType
-                    );
-                    model_saver_.WriteAttributeAtDataset(
-                        dataset_name_,
-                        "OUTPUT_FUNCTION_"+dataset_name_,
-                        strType,
-                        lantern::ffn::node::GetNodeTypeAsString((*all_layer_type_)[index+1])
-                    );
-
-                    index++;
-                    af::freeHost(data);
-
-                }
-
-                // create group model meta data to load later
-                model_saver_.CreateGroup("/ModelMetaData");
-                model_saver_.SetActiveGroup("/ModelMetaData");
-
-                // get current each layer size
-                auto* total_node_each_layer = this->layer->GetAllLayerSizes();
-
-                // create attribute to save all layer size
-                model_saver_.CreateDataSpace<2>("TOTAL_NODE_EACH_LAYER",{1,total_node_each_layer->size()});
-                model_saver_.CreateAttributeAtGroup(
-                    "/ModelMetaData",
-                    "TOTAL_NODE_EACH_LAYER",
-                    "TOTAL_NODE_EACH_LAYER",
-                    H5::PredType::NATIVE_UINT32
-                );
-                model_saver_.WriteAttributeAtGroup(
-                    "/ModelMetaData",
-                    "TOTAL_NODE_EACH_LAYER",
-                    H5::PredType::NATIVE_UINT32,
-                    total_node_each_layer->getData()
-                );
-
-                // create attribute to save output function
-                // just like in Train or Predict function
-                model_saver_.CreateScalarDataSpace("OUTPUT_FUNCTION");
-                model_saver_.CreateAttributeAtGroup(
-                    "/ModelMetaData",
-                    "OUTPUT_FUNCTION",
-                    "OUTPUT_FUNCTION",
-                    strType
-                );
-                model_saver_.WriteAttributeAtGroup(
-                    "/ModelMetaData",
-                    "OUTPUT_FUNCTION",
-                    strType,
-                    OutFuncName
-                );
+                this->layer->GenerateMetaData();
+                this->model_manager.AddModel("/FFN",this->layer);
+                this->model_manager.SelectModelToModify("/FFN");
+                this->model_manager.AddParams("Weights_Bias", this->parameters);
+                this->model_manager.SetOutFunctionName(OutFuncName);
 
             }
 
+            /**
+             * @brief Load model from HDF5
+             * @param _path 
+             */
             void LoadModel(const std::string& _path){
 
                 // celar prev params (only happend when after training and save model then load again the model)
-                this->parameters.clear();
-                this->outputs.clear();
                 this->is_loaded_model = true;
+                this->parameters.clean();
+                this->outputs.clean();
+
+                this->model_manager.LoadFile(_path);
+                this->model_manager.GetAllData();
                 
-                lantern::file::LanternHDF5 model_loader_(_path);
-                model_loader_.GetAllData();
+                this->layer = new lantern::ffn::layer::Layer();
+                this->model_manager.LoadModel("/FFN",this->layer);
+                this->model_manager.LoadParams("/FFN","Weights_Bias",this->parameters);
 
-                // Get all metadata for model
-                // Layer information
-                std::string group_name_ = "/ModelMetaData";
-                std::string output_model_;
-                H5::StrType strType(H5::PredType::C_S1,H5T_VARIABLE);
-                model_loader_.ReadAttributeAtGroup(group_name_, "OUTPUT_FUNCTION", strType, output_model_);
-
-
-                // create layer object for each layer meta data
-                lantern::ffn::layer::Layer* layer_ = new lantern::ffn::layer::Layer();
-                auto all_node_type_ = layer_->GetAllNodeTypeOfLayer();
-                auto all_layer_size_ = layer_->GetAllLayerSizes();
-
-                // get all node size
-                auto raw_dims_ = model_loader_.GetAttrDimsAtGroup(group_name_, "TOTAL_NODE_EACH_LAYER");
-                uint32_t total_size_ = 1;
-                for (auto dim : raw_dims_) {
-                    total_size_ *= dim;
-                }
-                all_layer_size_->resizeCapacity(total_size_);
-                all_layer_size_->explicitTotalItem(total_size_);
-                model_loader_.ReadAttributeAtGroup(group_name_, "TOTAL_NODE_EACH_LAYER", H5::PredType::NATIVE_UINT32, all_layer_size_->getData());
-
-                // get all node type of each layer
-                all_node_type_->push_back(lantern::ffn::node::NodeType::NOTHING); // first layer always an input which type of NOTHING (no activation will happend)
-                std::string node_type_, layer_index_str_;
-                for (uint32_t layer_index_ = 0; layer_index_ < all_layer_size_->size() - 1; layer_index_++) {
-
-                    layer_index_str_ = std::to_string(layer_index_);
-                    model_loader_.ReadAttributeAtDataset(
-                        "/Parameters/L"+ layer_index_str_, 
-                        "OUTPUT_FUNCTION_L" + layer_index_str_,
-                        strType,
-                        node_type_
-                    );
-
-                    // add an array to hold output at layer layer_index_
-                    this->outputs.push_back(
-                        af::constant(
-                            0.0f,
-                            (*all_layer_size_)[layer_index_],
-                            1,
-                            f64
-                        )
-                    );
-                    // push all "layer" node type to layer
-                    all_node_type_->push_back(lantern::ffn::node::GetNodeTypeFromString(node_type_));
-
-                }
-                // add the last layer outputs an array to hold
-                this->outputs.push_back(
-                    af::constant(
-                        0.0f,
-                        all_layer_size_->back(),
-                        1,
-                        f64
-                    )
-                );
-                this->layer = layer_;
-                layer_ = nullptr;
-
-                // get all layer weights and bias
-                layer_index_str_ = "";
-                uint32_t prev_layer, current_layer;
-                for (uint32_t layer_index_ = 0; layer_index_ < all_layer_size_->size() - 1; layer_index_++) {
-                    
-                    layer_index_str_ = std::to_string(layer_index_);
-                    prev_layer = (*all_layer_size_)[layer_index_+1];
-                    current_layer = (*all_layer_size_)[layer_index_];
-
-                    this->loaded_model_params.emplace_back(prev_layer * (current_layer + 1));
-
-                    model_loader_.ReadDataset(
-                        "/Parameters/L" + layer_index_str_,
-                        this->loaded_model_params.back().getData(),
-                        H5::PredType::NATIVE_DOUBLE
-                    );
-
-                    af::array params(prev_layer, current_layer + 1, this->loaded_model_params.back().getData());
-                    this->parameters.push_back(std::move(params));
-                    
+                for(uint32_t i = 0; i < this->layer->GetAllLayerSizes()->size(); i++){
+                    this->outputs.push_back(af::array());
                 }
             }
 
@@ -475,6 +358,10 @@ namespace lantern {
                 }
             }
 
+            /**
+             * @brief Get layer
+             * @return lantern::ffn::layer::Layer*
+             */
             lantern::ffn::layer::Layer* GetLayer() {
                 return this->layer;
             }

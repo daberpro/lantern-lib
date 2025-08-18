@@ -1,15 +1,19 @@
 #pragma once
 #include "../pch.h"
 
+/**
+ * @defgroup LanternContainer Custom container implementation for lantern
+ */
+
 namespace lantern {
 
     namespace utility {
 
-        enum class InitType {
-            XavierGlorot,
-            HeKaiming
-        };
-
+        /**
+         * @brief Lantern vector utility
+         * @tparam T 
+         * @ingroup LanternContainer
+         */
         template <typename T>
         class Vector {
         private:
@@ -18,6 +22,10 @@ namespace lantern {
 
         public:
 
+            /**
+             * @brief Resize the container with new capacity
+             * @param new_capacity 
+             */
             void resizeCapacity(const uint32_t& new_capacity) {
                 // set default capacity size when resize
                 T* new_container = (T*)::operator new((new_capacity) * sizeof(T));
@@ -33,6 +41,11 @@ namespace lantern {
                 this->capacity = new_capacity;
             }
 
+            /**
+             * @brief Resize container with new capacity and set default value for container
+             * @param new_capacity 
+             * @param all_default_value 
+             */
             void resizeCapacity(const uint32_t& new_capacity, const T& all_default_value) {
                 // set default capacity size when resize
                 T* new_container = (T*)::operator new((new_capacity) * sizeof(T));
@@ -57,17 +70,20 @@ namespace lantern {
 
             struct Iterator {
 
-                Iterator(T* ptr) : ptr(ptr){}
+                explicit Iterator(T* ptr) : ptr(ptr){}
 
                 T* ptr = nullptr;
-                using category = std::forward_iterator_tag;
+                using iterator_category = std::forward_iterator_tag;
                 using difference_type = std::ptrdiff_t;
+                using value_type = T;
+                using pointer = T*;
+                using reference = T&;
 
-                T& operator *() const {
+                reference operator *() const {
                     return *this->ptr;
                 }
 
-                T* operator ->(){
+                pointer operator ->() const {
                     return this->ptr;
                 }
 
@@ -173,6 +189,7 @@ namespace lantern {
              * 
              */
             Vector(){
+                // because this just init we must set the first size
                 this->resizeCapacity(this->capacity + 10);
             }
 
@@ -185,10 +202,15 @@ namespace lantern {
                 return this->capacity;
             }
 
+            /**
+             * @brief Emplate back to lantern vector data
+             * @tparam ...Args 
+             * @param ...data 
+             */
             template <typename... Args>
             void emplace_back(Args&&... data) {
                 if (this->m_size >= this->capacity) {
-                    this->resizeCapacity(this->capacity + 10);
+                    this->resizeCapacity(this->capacity + (this->capacity == 0? 10 : this->capacity / 2));
                 }
                 new(&this->data[this->m_size++]) T(std::forward<Args>(data)...);
             }
@@ -200,7 +222,7 @@ namespace lantern {
              */
             void push_back(T&& data){
                 if(this->m_size >= this->capacity){
-                    this->resizeCapacity(this->capacity + 10);
+                    this->resizeCapacity(this->capacity + (this->capacity == 0 ? 10 : this->capacity / 2));
                 }
                 new(&this->data[this->m_size++]) T(std::move(data));
             }
@@ -212,7 +234,7 @@ namespace lantern {
              */
             void push_back(const T& data){
                 if(this->m_size >= this->capacity){
-                    this->resizeCapacity(this->capacity + 10);
+                    this->resizeCapacity(this->capacity + (this->capacity == 0 ? 10 : this->capacity / 2));
                 }
                 new(&this->data[this->m_size++]) T(data);
             }
@@ -249,6 +271,17 @@ namespace lantern {
                     return this->data[0];
                 }
                 return this->data[this->m_size-1];
+            }
+
+            /**
+             * @brief Get first value in container
+             * @return 
+             */
+            T& front(){
+                if(this->data == nullptr){
+                    throw std::runtime_error("Runtine Error, cannot access first data at lantern Vector!\n");
+                }
+                return this->data[0];
             }
 
             /**
@@ -328,7 +361,7 @@ namespace lantern {
             }
 
             ~Vector(){
-                this->clear();
+                this->clean();
             }
 
            
@@ -413,7 +446,7 @@ namespace lantern {
 
             }
 
-            void operator =(Vector&& other){
+            void operator =(Vector&& other) noexcept {
                 if (this != &other) { // Prevent self-assignment
                     // Free existing memory
                     for (uint32_t i = 0; i < this->m_size; i++) {
@@ -449,14 +482,30 @@ namespace lantern {
              * 
              * @param based 
              */
-            void copyPtrData(Vector& based){
-                this->clear();
+            void copyPtrData(Vector& based) {
+                this->clean();
                 this->m_size = based.size();
                 this->capacity = based.getCapacity();
 
                 this->data = (T*)::operator new(this->capacity * sizeof(T));
-                for(uint32_t i = 0; i < this->m_size; i++){
+                for (uint32_t i = 0; i < this->m_size; i++) {
                     new(&this->data[i]) T(based.getData()[i]);
+                }
+            }
+
+                /**
+             * @brief Copy pointer data to this vector
+             *
+             * @param based
+             */
+            void movePtrData(Vector & based) {
+                this->clean();
+                this->m_size = based.size();
+                this->capacity = based.getCapacity();
+
+                this->data = (T*)::operator new(this->capacity * sizeof(T));
+                for (uint32_t i = 0; i < this->m_size; i++) {
+                    new(&this->data[i]) T(std::move(based.getData()[i]));
                 }
             }
 
@@ -470,10 +519,16 @@ namespace lantern {
             }
 
             /**
-             * @brief Clear this vector
+             * @brief Clean this vector
              * 
              */
-            void clear(){
+            void clean(){
+                if constexpr (std::is_same_v<T,af::array>) {
+                    for (uint32_t i = 0; i < this->m_size; i++) {
+                        this->data[i] = af::array(); // Clear GPU memory
+                    }
+                    af::deviceGC(); // Optional: force release from memory pool
+                }
                 // Free existing memory
                 for (uint32_t i = 0; i < this->m_size; i++) {
                     this->data[i].~T();
@@ -487,6 +542,11 @@ namespace lantern {
                 this->data = nullptr;
             }
 
+            /**
+             * @brief Get data at index
+             * @param index 
+             * @return T
+             */
             T at(const uint32_t& index){
                 if((index < 0 )|| (index > this->m_size)){
                     std::cerr << "Cannot access index " << index << " in lantern Vector utility \n";
@@ -510,9 +570,10 @@ namespace lantern {
          * @param mean 
          * @param stddev 
          * @return Vector<T> 
+         * @ingroup LanternContainer
          */
         template <typename T>
-        Vector<T> GenerateRandomNormalDVector(const uint32_t& size, const T& mean, const T& stddev) {
+        inline Vector<T> GenerateRandomNormalDVector(const uint32_t& size, const T& mean, const T& stddev) {
             std::random_device rd;
             std::mt19937 gen(rd());
             std::normal_distribution<T> dist(mean, stddev);

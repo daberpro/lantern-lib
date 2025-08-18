@@ -1,49 +1,105 @@
 #pragma once
 #include "../pch.h"
 #include "../Headers/Vector.h"
+#include "../Headers/Config.h"
+#include "../Base/BaseLayer.h"
 #include "FFNNode.h"
 
+/**
+ * @defgroup LanternLayer A layer definiton of lantern
+ */
 namespace lantern {
 
     namespace ffn {
+        /*
+            * =====================================================================
+              Meta data interface
 
+                {
+                  "name": "model_name",
+                  "layer_size": [],
+                  "node_type_of_layer": [
+                    "type"
+                  ]
+                }
+
+            * =====================================================================
+        */
         namespace layer {
     
-            class Layer {
+            /**
+             * @brief FFN Layer
+             * @ingroup LanternLayer
+             */
+            class Layer : public BaseLayer{
             private:
-    
-                lantern::utility::Vector<uint32_t> m_LayersSize;
+                
+                nlohmann::json meta_data = {
+                    {"name", "FFN"},
+                    {"layer_size", nlohmann::json::array()},
+                    {"node_type_of_layer", nlohmann::json::array()}
+                };
                 lantern::utility::Vector<lantern::ffn::node::NodeType> m_NodeTypeOfLayer;
     
             public:
     
                 Layer(){}
-                Layer(Layer&& _prev_layer) {
+                Layer(Layer&& _prev_layer) noexcept {
                     this->m_LayersSize.copyPtrData(*_prev_layer.GetAllLayerSizes());
                     this->m_NodeTypeOfLayer.copyPtrData(*_prev_layer.GetAllNodeTypeOfLayer());
-                    _prev_layer.~Layer();
+                }
+
+                /**
+                 * @brief Generate meta data to save model
+                 */
+                void GenerateMetaData() {
+                    this->meta_data["layer_size"] = this->m_LayersSize;
+                }
+
+                /**
+                 * @brief Get json Meta Data from layer
+                 * @return std::string
+                 */
+                std::string GetMetaDataAsString() {
+                    return this->meta_data.dump(1);
                 }
     
+                /**
+                 * @brief Add new node into layer
+                 * @tparam nodeTypeOfLayer 
+                 * @param _total_node 
+                 */
                 template <
                     lantern::ffn::node::NodeType nodeTypeOfLayer = lantern::ffn::node::NodeType::NOTHING
                 >
                 void Add(uint32_t _total_node){
+                    this->meta_data["node_type_of_layer"].push_back(
+                        lantern::ffn::node::GetNodeTypeAsString(nodeTypeOfLayer)
+                    );
                     this->m_LayersSize.push_back(_total_node);
                     this->m_NodeTypeOfLayer.push_back(nodeTypeOfLayer);
                 }
     
-                lantern::utility::Vector<uint32_t>* GetAllLayerSizes() {
-                    return &this->m_LayersSize;
-                }
-    
+                /**
+                 * @brief Get pointer of node type from all layer
+                 * @return lantern::utility::Vector<lantern::ffn::node::NodeType>*
+                 */
                 lantern::utility::Vector<lantern::ffn::node::NodeType>* GetAllNodeTypeOfLayer() {
                     return &this->m_NodeTypeOfLayer;
                 }
     
+                /**
+                 * @brief Get total node at layer
+                 * @param _layer 
+                 * @return uint32_t
+                 */
                 uint32_t GetTotalNodeAtLayer(const uint32_t& _layer) const {
                     return this->m_LayersSize[_layer];
                 }
 
+                /**
+                 * @brief Print all info about layer
+                 */
                 void PrintLayerInfo() {
                     uint32_t convolve_index = 0;
                     uint32_t pooling_index = 0;
@@ -70,8 +126,8 @@ namespace lantern {
                 }
     
                 ~Layer() {
-                    this->m_NodeTypeOfLayer.clear();
-                    this->m_LayersSize.clear();
+                    this->m_NodeTypeOfLayer.clean();
+                    this->m_LayersSize.clean();
                 }
     
             };

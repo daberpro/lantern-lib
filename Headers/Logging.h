@@ -4,7 +4,7 @@
 //#include "../FeedForwardNetwork/FeedForwardNetwork.h"
 
 
-std::ostream &operator<<(std::ostream &os,const af::array &tensor)
+inline std::ostream &operator<<(std::ostream &os,const af::array &tensor)
 {
     os << af::toString("Tensor",tensor,16,true);
     return os;
@@ -12,7 +12,7 @@ std::ostream &operator<<(std::ostream &os,const af::array &tensor)
 
 
 template <typename T>
-std::ostream &operator<<(std::ostream &os, const lantern::utility::Vector<T> & obj)
+inline std::ostream &operator<<(std::ostream &os, const lantern::utility::Vector<T> & obj)
 {
 
     os << "[";
@@ -71,5 +71,87 @@ struct std::formatter<lantern::utility::Vector<af::array>> {
         }
         oss << "]";
         return std::format_to(ctx.out(), "{}", oss.str());
+    }
+};
+
+template <>
+struct std::formatter<lantern::utility::Vector<uint32_t>> {
+
+    constexpr auto parse(std::format_parse_context& ctx) {
+        return ctx.begin();
+    }
+
+    auto format(const lantern::utility::Vector<uint32_t>& obj, std::format_context& ctx) const {
+        
+        std::ostringstream oss;
+        oss << "[";
+        for (size_t i = 0; i < obj.size(); ++i) {
+            if (i > 0) oss << ", ";
+            oss << std::to_string(obj[i]);
+        }
+        oss << "]";
+        return std::format_to(ctx.out(), "{}", oss.str());
+    }
+};
+
+template <>
+struct std::formatter<lantern::utility::Vector<double>> {
+
+    constexpr auto parse(std::format_parse_context& ctx) {
+        return ctx.begin();
+    }
+
+    auto format(const lantern::utility::Vector<double>& obj, std::format_context& ctx) const {
+        
+        std::ostringstream oss;
+        oss << "[";
+        for (size_t i = 0; i < obj.size(); ++i) {
+            if (i > 0) oss << ", ";
+            oss << std::to_string(obj[i]);
+        }
+        oss << "]";
+        return std::format_to(ctx.out(), "{}", oss.str());
+    }
+};
+
+
+template <typename T>
+struct std::formatter<lantern::utility::Vector<lantern::utility::Vector<T>>> {
+
+    constexpr auto parse(std::format_parse_context& ctx) {
+        return ctx.begin();
+    }
+
+    auto format(const lantern::utility::Vector<lantern::utility::Vector<T>>& obj, std::format_context& ctx) const {
+
+        std::string out = "";
+        if constexpr (std::is_same_v<T,std::string>) {
+
+            out = "[\n";
+            for (uint32_t i = 0; i < obj.size(); i++) {
+                for (uint32_t j = 0; j < obj[i].size(); j++) {
+                    if (j > 0) {
+                        out += ", ";
+                    }
+                    out += obj[i][j];
+                }
+                out += "\n";
+            }
+            out += "]\n";
+        }
+        else {
+            std::ostringstream oss;
+            for (uint32_t i = 0; i < obj.size(); i++) {
+                for (uint32_t j = 0; j < obj[i].size(); j++) {
+                    if (j > 0) {
+                        oss << ", ";
+                    }
+                    oss << std::to_string(obj[i][j]);
+                }
+                oss << '\n';
+            }
+            out = oss.str();
+        }
+        return std::format_to(ctx.out(), "{}", out);
     }
 };
