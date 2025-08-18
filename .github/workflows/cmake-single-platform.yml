@@ -1,53 +1,38 @@
-name: CI for Lantern Project with ArrayFire on Windows
+name: Windows CI with Prebuilt Deps
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
-  build-arrayfire:
+  build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      
-    - name: Set up MSVC environment
-      uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/checkout@v4
 
-    - name: Clone ArrayFire
-      run: |
-        git clone --recursive https://github.com/arrayfire/arrayfire.git
-        cd arrayfire
-        git submodule update --init --recursive
+      # 1. Cache prebuilt dependencies
+      - name: Cache prebuilt deps
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: prebuilt-deps
+          key: prebuilt-deps-v1
 
-    - name: Configure ArrayFire with CMake (CPU backend only)
-      run: |
-        cd arrayfire
-        mkdir build
-        cd build
-        cmake .. -G Ninja -DAF_BUILD_CPU=ON -DAF_BUILD_UNIFIED=ON -DAF_BUILD_EXAMPLES=OFF -DAF_BUILD_TESTS=OFF
+      # 2. Download from Release if cache missed
+      - name: Download prebuilt deps
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          echo "Downloading prebuilt deps..."
+          curl -L -o deps.zip https://github.com/daberpro/lantern-lib/releases/download/Prebuild-Binaries-For-Lantern/github-actions.zip
+          Expand-Archive deps.zip -DestinationPath prebuilt-deps
 
-    - name: Build ArrayFire
-      run: |
-        cd arrayfire/build
-        ninja
+      # 3. Configure project with prebuilt deps
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_PREFIX_PATH="${{ github.workspace }}/prebuilt-deps/github-actions"
 
-    - name: Install ArrayFire
-      run: |
-        cd arrayfire/build
-        ninja install
-        
-    - name: Get all external dependencies
-      run: |
-        cd ExternalDependencies
-        git clone https://github.com/alandefreitas/matplotplusplus.git
-        
-    - name: Setup config for Lantern
-      run: |
-        mkdir build
-        cd build
-        cmake .. -G Ninja
-        
-    - name: Build Lantern
-      run: |
-        cd build
-        ninja
+      # 4. Build project
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
