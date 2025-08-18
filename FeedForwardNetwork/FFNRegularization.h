@@ -1,6 +1,10 @@
 #pragma once
 #include "../pch.h"
 
+/**
+ * @defgroup LantermFFNRegularize Regularization for lantern FFN
+ */
+
 namespace lantern {
 
     namespace regularization {
@@ -11,8 +15,9 @@ namespace lantern {
          * @param lambda 
          * @param batch_size 
          * @param weights this is not derivative of weights but actual weights
+         * @ingroup LantermFFNRegularize
          */
-        af::array L2Regularization(
+        inline af::array L2Regularization(
             const double& lambda, 
             const double& batch_size,
             const af::array& weights
@@ -32,8 +37,9 @@ namespace lantern {
          * @param lambda 
          * @param batch_size 
          * @param weights this is not derivative of weights but actual weights
+         * @ingroup LantermFFNRegularize
          */
-        af::array L1Regularization(
+        inline af::array L1Regularization(
             const double& lambda, 
             const double& batch_size,
             const af::array& weights

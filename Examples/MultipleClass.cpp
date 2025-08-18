@@ -98,7 +98,7 @@ int main(){
 			loss = lantern::loss::CrossEntropy(output, target_output) / batch_size;
 			std::cout << "Loss : " << loss << '\n';
 
-			prev_gradient.back() = lantern::derivative::CrossEntropySoftMax(output, target_output);
+			prev_gradient.back() = lantern::derivative::CrossEntropy(output, target_output);
 			lantern::ffn::backprop::Backpropagate(
 				layer,
 				parameters,

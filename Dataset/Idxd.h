@@ -2,10 +2,19 @@
 #include "../pch.h"
 #include "../Headers/Vector.h"
 
+/**
+ * @defgroup LanternIDX IDX Wrapper for lantern
+ */
+
 namespace lantern {
 
     namespace idxd {
 
+        /**
+         * @brief IDX wrapper for lantern
+         * @tparam T 
+         * @ingroup LanternIDX
+         */
         template <typename T>
         class Idx {
         private:
@@ -16,21 +25,30 @@ namespace lantern {
             uint8_t dimension;
             long long total_elements = 1;
 
-
+            /**
+             * @brief Read with big endian for file
+             * @param file 
+             * @return int
+             */
             int ReadBigEndian(std::ifstream& file){
                 uint8_t bytes[4]; // read 4 bytes of file data
                 // take bytes from file because its need char* weh need to cast unsigned char to char
-                file.read(reinterpret_cast<char*>(bytes),4); 
+                if (!file.read(reinterpret_cast<char*>(bytes), 4)) {
+                    throw std::runtime_error("lantern dataset MNIST error, Unexpected EOF while reading big endian data");
+                }
                 // then left shift all bytes to fix order because if we just use implicit cast
                 // the order of byte will wrong
-                return (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
+                return  (static_cast<int>(bytes[0]) << 24) |
+                        (static_cast<int>(bytes[1]) << 16) |
+                        (static_cast<int>(bytes[2]) << 8)  |
+                        static_cast<int>(bytes[3]);
             }
 
         public:
 
-            Idx(){}
+            Idx() noexcept {}
 
-            Idx(const std::string& _file){
+            Idx(const std::string& _file) noexcept {
                 try{
                     
                     if(!std::filesystem::exists(_file)){
@@ -94,14 +112,32 @@ namespace lantern {
                 return this->data.getData() + start;
             }
             
+            /**
+             * @brief Get pointer of data 
+             * @return lantern::utility::Vector<T>*
+             */
             lantern::utility::Vector<T>* GetData(){
                 return &this->data;
             }
 
+            /**
+             * @brief Get dimension of data
+             * @brief - dims 0 for total data
+             * @brief - dims 1 for size of width (if exists)
+             * @brief - dims 2 for size of height (if exists)
+             * @return lantern::utility::Vector<int>*
+             */
             lantern::utility::Vector<int>* GetDims(){
                 return &this->dims;
             }
 
+            /**
+             * @brief Get total element for images is :
+             * @brief w * h * total_data
+             * @brief for labels is :
+             * @brief total_data
+             * @return long long
+             */
             long long GetTotalElements(){
                 return this->total_elements;
             }

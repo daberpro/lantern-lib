@@ -95,7 +95,10 @@
         "typeindex": "cpp",
         "print": "cpp",
         "*.mm": "cpp",
-        "stacktrace": "cpp"
+        "stacktrace": "cpp",
+        "ranges": "cpp",
+        "valarray": "cpp",
+        "string_view": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

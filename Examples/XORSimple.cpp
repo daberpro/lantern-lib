@@ -56,8 +56,8 @@ int main(int argc, char* argv[]){
 
             model.Train<4>(
                 adam,
-                lantern::loss::SumSquareResidual,
-                lantern::derivative::SumSquareResidual,
+                lantern::loss::BinaryCrossEntropy,
+                lantern::derivative::BinaryCrossEntropy,
                 lantern::activation::Linear
             );
 

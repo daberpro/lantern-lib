@@ -3,6 +3,10 @@
 #include "../Headers/Vector.h"
 #include <unordered_set>
 
+/**
+ * @defgroup LanternDataProcessing An utility function to manipulate or generate data
+ */
+
 namespace lantern {
 
     namespace data {
@@ -12,17 +16,18 @@ namespace lantern {
          * 
          * @tparam batch_size 
          * @tparam Args 
-         * @param batch_index a stack of index data
-         * @param size size of each data
+         * @param batch_index
+         * @param size
+         * @ingroup LanternDataProcessing
          */
         template <uint32_t batch_size,typename... Args>
-        void GetRandomSampleClassIndex(lantern::utility::Vector<uint32_t>& batch_index,Args... size){
+        inline void GetRandomSampleClassIndex(lantern::utility::Vector<uint32_t>& batch_index,Args... size){
 
-            batch_index.clear();
+            batch_index.clean();
 
             std::random_device rd;
             std::mt19937 rg(rd());
-            std::uniform_int_distribution<> dis(0,100);
+            std::uniform_int_distribution<> dis(0,6); // 6 is just for init, just ignore it
             uint32_t prev_size = 0, index = 0;
             uint32_t total_class = static_cast<uint32_t>(sizeof...(Args));
             uint32_t total_rest_data = batch_size % total_class;
@@ -61,33 +66,31 @@ namespace lantern {
 
         /**
          * @brief Get the Random Sample Class Index
-         * 
          * @tparam batch_size 
-         * @tparam Args 
-         * @param batch_index a stack of index data
-         * @param size size of each data
+         * @param batch_index
+         * @param each_size
+         * @param total_size_of_class
+         * @ingroup LanternDataProcessing
          */
         template <uint32_t batch_size>
-        void GetRandomSampleClassIndex(lantern::utility::Vector<uint32_t>& batch_index,lantern::utility::Vector<uint32_t>& each_size, const uint32_t& total_size_of_class){
+        inline void GetRandomSampleClassIndex(lantern::utility::Vector<uint32_t>& batch_index,lantern::utility::Vector<uint32_t>& each_size, const uint32_t& total_size_of_class){
             
-            batch_index.clear();
+            batch_index.clean();
             std::random_device rd;
             std::mt19937 rg(rd());
 
             
             if(total_size_of_class <= 20){
-                lantern::utility::Vector<uint32_t> temp_indexs;
                 for(uint32_t _i = 0; _i < total_size_of_class; _i++){
-                    temp_indexs.push_back(_i);
+                    batch_index.push_back(_i);
                 }
 
-                uint32_t* ptr = temp_indexs.getData();
-                std::shuffle(&ptr[0],&ptr[temp_indexs.size() - 1],rg);
-                batch_index = std::move(temp_indexs);
+                uint32_t* ptr = batch_index.getData();
+                std::shuffle(&ptr[0],&ptr[batch_index.size() - 1],rg);
                 return;
             }
             
-            std::uniform_int_distribution<> dis(0,100);
+            std::uniform_int_distribution<> dis(0,6); // 6 is just for init, just ignore it
             uint32_t prev_size = 0, index = 0;
             std::unordered_set<int> already_add;
 

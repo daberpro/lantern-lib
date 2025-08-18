@@ -1,1 +1,8 @@
 **/build/
+**/out/
+**/.vs/
+**/.vscode/
+CMakePresets.json
+CMakeSettings.json
+docs/
+BaseExamples.txt

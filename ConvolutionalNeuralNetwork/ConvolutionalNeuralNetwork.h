@@ -1,5 +1,9 @@
+#pragma once
+#include "../pch.h"
+#include "../Headers/Vector.h"
+#include "../Headers/DataProcessing.h"
 #include "CNNLayer.h"
 #include "CNNNode.h"
 #include "CNNOptimizer/CNNOptimizer.h"
-#include "CNNExperimentalFeedForward.h"
+#include "CNNFeedForward.h"
 #include "CNNBackPropagation.h"

@@ -1,3 +1,4 @@
+#pragma once
 #define NOMINMAX
 #include <iostream>
 #include <vector>
@@ -24,3 +25,9 @@
 #include <stacktrace>
 #include <print>
 #include <utility>
+#include <any>
+#include <charconv>
+#include <condition_variable>
+#include <mutex>
+#include <sstream>
+#include <nlohmann/json.hpp>

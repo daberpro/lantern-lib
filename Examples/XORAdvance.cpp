@@ -51,14 +51,14 @@ int main(){
 			parameters
 		);
 		
-		loss = lantern::loss::SumSquareResidual(outputs.back(),selected_target);
+		loss = lantern::loss::BinaryCrossEntropy(outputs.back(),selected_target);
 		std::cout << "Loss : " << loss << '\n';
 
 		if(loss <= 1e-07){
 			break;
 		}
 
-		prev_gradient.back() = lantern::derivative::SumSquareResidual(outputs.back(),selected_target);
+		prev_gradient.back() = lantern::derivative::BinaryCrossEntropy(outputs.back(),selected_target);
 
 		lantern::ffn::backprop::Backpropagate(
 			layer,

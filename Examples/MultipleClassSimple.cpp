@@ -111,7 +111,7 @@ int main(){
 	model.Train<15>(
 		optimizer,
 		lantern::loss::CrossEntropy,
-		lantern::derivative::CrossEntropySoftMax,
+		lantern::derivative::CrossEntropy,
 		lantern::probability::SoftMax
 	);
 
@@ -150,7 +150,6 @@ int main(){
 	 * Load the model we have already save
 	 */
 	model.LoadModel("Result.h5");
-	auto l = model.GetLayer();
 	af::array predict_result;
 	/**
 	 * Then predict again 
