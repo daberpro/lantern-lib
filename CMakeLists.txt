@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 3.31)
 project(lantern VERSION 0.0.1)
 
 option(COPY_DATASET "Copy default dataset (Mnist and other) folder to build output" ON)
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 set(CMAKE_CXX_STANDARD 23)
 list(APPEND CMAKE_PREFIX_PATH "D:/module")
 include_directories("D:/module/include")
@@ -10,7 +11,6 @@ include_directories("D:/module/include")
 find_package(ZLIB REQUIRED)
 find_package(HDF5 REQUIRED)
 find_package(ArrayFire REQUIRED)
-find_package(MatPlot++ REQUIRED)
 
 file(
     GLOB HEADER_FILES 
@@ -21,7 +21,7 @@ file(
     "${CMAKE_SOURCE_DIR}/Base/*.h"
 )
 
-# add_definitions(/MTd)
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/AutoGradient)
 # add_subdirectory(${CMAKE_SOURCE_DIR}/Examples)
 add_executable(${PROJECT_NAME} main.cpp pch.h ${HEADER_FILES})
@@ -43,9 +43,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_PREFIX_PATH}/lib)
 target_link_libraries(
     ${PROJECT_NAME} PUBLIC 
     AutoGradient 
-    ArrayFire::afcuda
-    Matplot++::nodesoup 
-    Matplot++::matplot 
+    ArrayFire::af
     hdf5_cpp-static
 )
 target_precompile_headers(${PROJECT_NAME} PUBLIC pch.h)

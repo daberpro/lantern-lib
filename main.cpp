@@ -16,6 +16,8 @@ int main(int argc, char* argv[])
     {
         
         if (argc == 3) {
+
+            /*af::setBackend(af::Backend::AF_BACKEND_CUDA);*/
             
             const uint32_t IMAGE_WIDTH = 200;
             const uint32_t IMAGE_HEIGHT = 200;
