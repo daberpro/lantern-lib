@@ -11,82 +11,82 @@ namespace lantern {
 
         /**
          * @brief Derivative of sigmoid
-         * @param x 
+         * @param _x 
          * @return double
          * @ingroup LanternBasicSymbolDerivative
          */
-        inline double dsigmoid(const double& x){
-            return x * (1-x);
+        inline double dsigmoid(const double& _x){
+            return _x * (1-_x);
         }
 
         /**
          * @brief Derivative of natural log
-         * @param x 
+         * @param _x 
          * @return double
          * @ingroup LanternBasicSymbolDerivative
          */
-        inline double dlog(const double& x){
-            return 1/x;
+        inline double dlog(const double& _x){
+            return 1/_x;
         }
 
         /**
-         * @brief Derivative of exp
-         * @param x 
+         * @brief Derivative of e_xp
+         * @param _x 
          * @return double
          * @ingroup LanternBasicSymbolDerivative
          */
-        inline double dexp(const double& x){
-            return exp(x);
+        inline double de_xp(const double& _x){
+            return exp(_x);
         }
 
         /**
          * @brief Derivative of sin
-         * @param x 
+         * @param _x 
          * @return double
          * @ingroup LanternBasicSymbolDerivative
          */
-        inline double dsin(const double& x){
-            return cos(x);
+        inline double dsin(const double& _x){
+            return cos(_x);
         }
 
         /**
          * @brief Derivative of cos
-         * @param x 
+         * @param _x 
          * @return double
          * @ingroup LanternBasicSymbolDerivative
          */
-        inline double dcos(const double& x){
-            return -sin(x);
+        inline double dcos(const double& _x){
+            return -sin(_x);
         }
 
         /**
          * @brief Derivative of tan
-         * @param x 
+         * @param _x 
          * @return double;
          * @ingroup LanternBasicSymbolDerivative
          */
-        inline double dtan(const double& x){
-            return 1/pow(cos(x),2);
+        inline double dtan(const double& _x){
+            return 1/pow(cos(_x),2);
         }
 
         /**
          * @brief Derivative of ReLU
-         * @param x 
+         * @param _x 
          * @return double
          * @ingroup LanternBasicSymbolDerivative
          */
-        inline double drelu(const double& x){
-            return (x > 0? 1 : 0);
+        inline double drelu(const double& _x){
+            return (_x > 0? 1 : 0);
         }
 
         /**
          * @brief Derivative of Swish 
-         * @param x 
+         * @param _x 
          * @return double
          * @ingroup LanternBasicSymbolDerivative
          */
-        inline double dswish(const double& x){
-            return (1 / (1+exp(-x))) + x * dsigmoid(x);
+        inline double dswish(const double& _x){
+            return (1 / (1+exp(-_x))) + _x * dsigmoid(_x);
         }
 
     }

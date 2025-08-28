@@ -62,16 +62,13 @@ int main(){
 	layer.Add<lantern::ffn::node::NodeType::SWISH>(15);
 	layer.Add<lantern::ffn::node::NodeType::LINEAR>(3);
 
-	lantern::utility::Vector<af::array> parameters;
-	lantern::utility::Vector<af::array> prev_gradient;
-	lantern::utility::Vector<af::array> outputs;
+	lantern::utility::Vector<af::array>* parameters = layer.GetParameters();
+	lantern::utility::Vector<af::array>* prev_gradient = layer.GetPrevradient();
+	lantern::utility::Vector<af::array>* outputs = layer.GetOutputs();
 	lantern::ffn::optimizer::AdaptiveMomentEstimation optimizer;
 
 	lantern::ffn::feedforward::Initialize(
 		layer,
-		parameters,
-		prev_gradient,
-		outputs,
 		optimizer
 	);
 
@@ -81,29 +78,23 @@ int main(){
 	double loss = 1;
 	af::array output, target_output;
 	
-	prev_gradient.push_back(af::array());
 	while(current_iter < epoch){
 
 		for(auto& selected_index : batch_index){
 
-			outputs[0] = input.row(selected_index).T();
+			(*outputs)[0] = input.row(selected_index).T();
 			target_output = target.row(selected_index).T();
 			lantern::ffn::feedforward::FeedForward(
-				layer,
-				outputs,
-				parameters
+				layer
 			);
 
-			output = lantern::probability::SoftMax(outputs.back());
+			output = lantern::probability::SoftMax(outputs->back());
 			loss = lantern::loss::CrossEntropy(output, target_output) / batch_size;
 			std::cout << "Loss : " << loss << '\n';
 
-			prev_gradient.back() = lantern::derivative::CrossEntropy(output, target_output);
+			prev_gradient->back() = lantern::derivative::CrossEntropy(output, target_output);
 			lantern::ffn::backprop::Backpropagate(
 				layer,
-				parameters,
-				prev_gradient,
-				outputs,
 				optimizer,
 				batch_size
 			);
@@ -116,13 +107,11 @@ int main(){
 	}
 
 	for(uint32_t i = 0; i < input.dims(0); i++){
-		outputs[0] = input.row(i).T();
+		(*outputs)[0] = input.row(i).T();
 		lantern::ffn::feedforward::FeedForward(
-			layer,
-			outputs,
-			parameters
+			layer
 		);
-		output = lantern::probability::SoftMax(outputs.back());
+		output = lantern::probability::SoftMax(outputs->back());
 		std::cout << "\nPrediction: \n " << output;
 		std::cout << "Target: \n " << target.row(i);
 	}

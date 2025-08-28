@@ -18,7 +18,7 @@ namespace lantern
                  * @param beta
                  * @param epsilon
                  */
-                RootMeanSquarePropagation(double learning_rate = 0.01, double beta_1 = 0.9, double epsilon = 1e-8) : Base(learning_rate, beta_1, 0.999, epsilon) {}
+                RootMeanSquarePropagation(const double& _learning_rate = 0.01, const double& _beta_1 = 0.9, const double& _epsilon = 1e-8) : Base(_learning_rate, _beta_1, 0.999, _epsilon) {}
     
                 /**
                  * @brief Get the Optimize result of gradient
@@ -27,12 +27,12 @@ namespace lantern
                  * @param index
                  * @return af::array
                  */
-                af::array GetDelta(af::array &gradient, uint32_t &index) override
+                af::array GetDelta(const af::array& _gradient, const uint32_t& _index) override
                 {
-                    this->vector_velocity[index] *= this->beta_1;
-                    this->vector_velocity[index] += this->learning_rate * af::pow(gradient, 2);
-                    this->vector_velocity[index].eval();
-                    return this->learning_rate * (gradient / (af::sqrt(this->vector_velocity[index]) + this->epsilon));
+                    this->m_vector_velocity[_index] *= this->m_beta_1;
+                    this->m_vector_velocity[_index] += this->m_learning_rate * af::pow(_gradient, 2);
+                    this->m_vector_velocity[_index].eval();
+                    return this->m_learning_rate * (_gradient / (af::sqrt(this->m_vector_velocity[_index]) + this->m_epsilon));
                 }
             };
     

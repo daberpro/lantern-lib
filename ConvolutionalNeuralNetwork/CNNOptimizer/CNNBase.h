@@ -10,25 +10,25 @@ namespace lantern {
     
             class Base {
             protected:
-                double learning_rate = 0.01, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-8;
-                uint32_t iteration = 0;
-                af::array w_mt, w_vt; // for weigths
-                af::array b_mt, b_vt; // for bias
-                af::array batch_norm_mt, batch_norm_vt; // for batch norm parameters
-                lantern::utility::Vector<af::array> w_vector_velocity; // for weights
-                lantern::utility::Vector<af::array> w_stack_previous_gradient; // for weights
-                lantern::utility::Vector<af::array> b_vector_velocity; // for bias
-                lantern::utility::Vector<af::array> b_stack_previous_gradient; // for bias
-                lantern::utility::Vector<af::array> batch_norm_vector_velocity; // for batch norm parameters
-                lantern::utility::Vector<af::array> batch_norm_stack_previous_gradient; // for batch norm parameters
+                double m_learning_rate = 0.01, m_beta_1 = 0.9, m_beta_2 = 0.999, m_epsilon = 1e-8;
+                uint32_t m_iteration = 0;
+                af::array m_w_mt, m_w_vt; // for weigths
+                af::array m_b_mt, m_b_vt; // for bias
+                af::array m_batch_norm_mt, m_batch_norm_vt; // for batch norm parameters
+                lantern::utility::Vector<af::array> m_w_vector_velocity; // for weights
+                lantern::utility::Vector<af::array> m_w_stack_previous_gradient; // for weights
+                lantern::utility::Vector<af::array> m_b_vector_velocity; // for bias
+                lantern::utility::Vector<af::array> m_b_stack_previous_gradient; // for bias
+                lantern::utility::Vector<af::array> m_batch_norm_vector_velocity; // for batch norm parameters
+                lantern::utility::Vector<af::array> m_batch_norm_stack_previous_gradient; // for batch norm parameters
 
             public:
     
-                Base(const double& learning_rate = 0.01,const double& beta_1 = 0.9,const double& beta_2 = 0.999,const double& epsilon = 1e-8) : 
-                learning_rate(learning_rate), 
-                beta_1(beta_1), 
-                beta_2(beta_2), 
-                epsilon(epsilon) {}
+                Base(const double& _learning_rate = 0.01,const double& _beta_1 = 0.9,const double& _beta_2 = 0.999,const double& _epsilon = 1e-8) : 
+                m_learning_rate(_learning_rate), 
+                m_beta_1(_beta_1), 
+                m_beta_2(_beta_2), 
+                m_epsilon(_epsilon) {}
     
                 virtual ~Base(){};
 
@@ -36,7 +36,7 @@ namespace lantern {
                  * @brief Get learning rate for weights and bias
                  * @return double
                  */
-                virtual std::pair<af::array,af::array> GetDelta(const af::array& gradient_w, const af::array& gradient_b,const uint32_t& index){
+                virtual std::pair<af::array,af::array> GetDelta(const af::array& _gradient_w, const af::array& _gradient_b,const uint32_t& _index){
                     return {af::array(),af::array()};
                 };
 
@@ -44,7 +44,7 @@ namespace lantern {
                  * @brief Get learning rate for batch norm parameters
                  * @return af::array
                  */
-                virtual af::array GetDeltaBatchNorm(const af::array& batch_norm_gradient,const uint32_t& index){
+                virtual af::array GetDeltaBatchNorm(const af::array& _batch_norm_gradient,const uint32_t& _index){
                     return af::array();
                 };
                 
@@ -53,7 +53,7 @@ namespace lantern {
                  * @return lantern::utility::Vector<af::array>&
                  */
                 lantern::utility::Vector<af::array>& GetWVectorVelocity(){
-                    return this->w_vector_velocity;
+                    return this->m_w_vector_velocity;
                 }
                 
                 /**
@@ -61,7 +61,7 @@ namespace lantern {
                  * @return lantern::utility::Vector<af::array>&
                  */
                 lantern::utility::Vector<af::array>& GetWStackPrevGrad(){
-                    return this->w_stack_previous_gradient;
+                    return this->m_w_stack_previous_gradient;
                 }
 
                 /**
@@ -69,7 +69,7 @@ namespace lantern {
                  * @return lantern::utility::Vector<af::array>&
                  */
                 lantern::utility::Vector<af::array>& GetBVectorVelocity(){
-                    return this->b_vector_velocity;
+                    return this->m_b_vector_velocity;
                 }
                 
                 /**
@@ -77,7 +77,7 @@ namespace lantern {
                  * @return lantern::utility::Vector<af::array>&
                  */
                 lantern::utility::Vector<af::array>& GetBStackPrevGrad(){
-                    return this->b_stack_previous_gradient;
+                    return this->m_b_stack_previous_gradient;
                 }
 
                 /**
@@ -85,7 +85,7 @@ namespace lantern {
                  * @return lantern::utility::Vector<af::array>&
                  */
                 lantern::utility::Vector<af::array>& GetBatchNormVectorVelocity(){
-                    return this->batch_norm_vector_velocity;
+                    return this->m_batch_norm_vector_velocity;
                 }
 
                 /**
@@ -93,7 +93,7 @@ namespace lantern {
                  * @return lantern::utility::Vector<af::array>&
                  */
                 lantern::utility::Vector<af::array>& GetBatchNormStackPreviousGradient(){
-                    return this->batch_norm_stack_previous_gradient;
+                    return this->m_batch_norm_stack_previous_gradient;
                 }
             };
     

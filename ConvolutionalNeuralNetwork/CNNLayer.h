@@ -18,12 +18,12 @@ namespace lantern {
             class ConvolveLayerInfo {
             public:
 
-                af::dim4 padding;
-                af::dim4 stride;
-                uint32_t kernel_size, kernel_depth;
+                af::dim4 m_padding;
+                af::dim4 m_stride;
+                uint32_t m_kernel_size, m_kernel_depth;
                 ConvolveLayerInfo(const uint32_t& _kernel_size,const af::dim4& _padding,const af::dim4& _stride,const uint32_t& _kernel_depth) :
-                kernel_size(_kernel_size), padding(_padding), stride(_stride), kernel_depth(_kernel_depth) {}
-                ConvolveLayerInfo() : kernel_size(0), kernel_depth(0) {}
+                m_kernel_size(_kernel_size), m_padding(_padding), m_stride(_stride), m_kernel_depth(_kernel_depth) {}
+                ConvolveLayerInfo() : m_kernel_size(0), m_kernel_depth(0) {}
 
             };
 
@@ -34,9 +34,9 @@ namespace lantern {
             class PoolingLayerInfo {
             public:
                 
-                af::dim4 stride;
-                uint32_t size_w, size_h;
-                PoolingLayerInfo(const uint32_t& _size_w,const uint32_t& _size_h, const af::dim4& _stride) : size_w(_size_w), size_h(_size_h), stride(_stride){} 
+                af::dim4 m_stride;
+                uint32_t m_size_w, m_size_h;
+                PoolingLayerInfo(const uint32_t& _size_w,const uint32_t& _size_h, const af::dim4& _stride) : m_size_w(_size_w), m_size_h(_size_h), m_stride(_stride){} 
 
             };
 
@@ -78,7 +78,7 @@ namespace lantern {
             class Layer : public BaseLayer {
             private:
 
-                nlohmann::json meta_data = {
+                nlohmann::json m_meta_data = {
                     {"name", "CNN"},
                     {"layer_size", nlohmann::json::array()},
                     {"convolve_layer_info", nlohmann::json::array()},
@@ -92,10 +92,10 @@ namespace lantern {
                 lantern::utility::Vector<lantern::cnn::node::NodeType> m_NodeTypeOfLayer;
                 lantern::utility::Vector<uint32_t> m_InputSize;
 
-                lantern::utility::Vector<af::array> CNN_weights;
-                lantern::utility::Vector<af::array> CNN_bias;
-                lantern::utility::Vector<af::array> CNN_prev_gradient;
-                lantern::utility::Vector<af::array> CNN_outputs;
+                lantern::utility::Vector<af::array> m_weights;
+                lantern::utility::Vector<af::array> m_bias;
+                lantern::utility::Vector<af::array> m_prev_gradient;
+                lantern::utility::Vector<af::array> m_outputs;
 
                 // temp container to save pooling stride modification result
                 // because the function activation pooling with stride just change actual input
@@ -111,13 +111,13 @@ namespace lantern {
     
                 Layer(){}
                 Layer(Layer&& _prev_layer) noexcept {
-                    this->m_LayersSize.copyPtrData(*_prev_layer.GetAllLayerSizes());
-                    this->m_NodeTypeOfLayer.copyPtrData(*_prev_layer.GetAllNodeTypeOfLayer());
+                    this->m_LayersSize = (*_prev_layer.GetAllLayerSizes());
+                    this->m_NodeTypeOfLayer = (*_prev_layer.GetAllNodeTypeOfLayer());
                 }
 
                 void operator =(Layer&& _prev_layer) noexcept {
-                    this->m_LayersSize.copyPtrData(*_prev_layer.GetAllLayerSizes());
-                    this->m_NodeTypeOfLayer.copyPtrData(*_prev_layer.GetAllNodeTypeOfLayer());
+                    this->m_LayersSize = (*_prev_layer.GetAllLayerSizes());
+                    this->m_NodeTypeOfLayer = (*_prev_layer.GetAllNodeTypeOfLayer());
                 }
     
                 /**
@@ -141,14 +141,14 @@ namespace lantern {
                     }
 
                     // add convolve info to meta data
-                    this->meta_data["convolve_layer_info"].push_back({
+                    this->m_meta_data["convolve_layer_info"].push_back({
                         {"padding",_padding},
                         {"stride",_stride},
                         {"kernel_size", _kernel_size},
                         {"kernel_depth", _kernel_depth},
                     });
 
-                    this->meta_data["node_type_of_layer"].push_back(
+                    this->m_meta_data["node_type_of_layer"].push_back(
                         lantern::cnn::node::GetNodeTypeAsString(lantern::cnn::node::NodeType::CONVOLVE)
                     );
 
@@ -171,12 +171,12 @@ namespace lantern {
                     const af::dim4& _stride = af::dim4(1,1)
                 ){
                     
-                    this->meta_data["pooling_layer_info"].push_back({
+                    this->m_meta_data["pooling_layer_info"].push_back({
                         {"stride", _stride},
                         {"size_w", _size_w},
                         {"size_h", _size_h}
                     });
-                    this->meta_data["node_type_of_layer"].push_back(
+                    this->m_meta_data["node_type_of_layer"].push_back(
                         lantern::cnn::node::GetNodeTypeAsString(POOL_TYPE)
                     );
                     this->m_LayersSize.push_back(1);
@@ -193,7 +193,7 @@ namespace lantern {
                     lantern::cnn::node::NodeType nodeTypeOfLayer = lantern::cnn::node::NodeType::NOTHING
                 >
                 void Add(){
-                    this->meta_data["node_type_of_layer"].push_back(
+                    this->m_meta_data["node_type_of_layer"].push_back(
                         lantern::cnn::node::GetNodeTypeAsString(nodeTypeOfLayer)
                     );
                     this->m_LayersSize.push_back(1);
@@ -205,7 +205,7 @@ namespace lantern {
                  * @param _input_sizes 
                  */
                 void SetInputSize(lantern::utility::Vector<uint32_t>&& _input_sizes){
-                    this->meta_data["input_size"] = _input_sizes;
+                    this->m_meta_data["input_size"] = _input_sizes;
                     this->m_InputSize = std::move(_input_sizes);
                 }
 
@@ -217,20 +217,24 @@ namespace lantern {
                     return &this->m_BatchNormParams;
                 }
 
+                lantern::utility::Vector<af::array>* GetBatchNormDerivativeOutputs() {
+                    return &this->m_BatchNormDerivativeForOutputs;
+                }
+
                 lantern::utility::Vector<af::array>* GetWeights(){
-                    return &this->CNN_weights;
+                    return &this->m_weights;
                 }
 
                 lantern::utility::Vector<af::array>* GetBias(){
-                    return &this->CNN_bias;
+                    return &this->m_bias;
                 }
 
                 lantern::utility::Vector<af::array>* GetPrevGradient(){
-                    return &this->CNN_prev_gradient;
+                    return &this->m_prev_gradient;
                 }
                 
                 lantern::utility::Vector<af::array>* GetOutputs(){
-                    return &this->CNN_outputs;
+                    return &this->m_outputs;
                 }
 
                 /**
@@ -277,7 +281,7 @@ namespace lantern {
                  * @brief Generate meta data to save model
                  */
                 void GenerateMetaData() {
-                    this->meta_data["layer_size"] = this->m_LayersSize;
+                    this->m_meta_data["layer_size"] = this->m_LayersSize;
                 }
 
                 /**
@@ -285,7 +289,7 @@ namespace lantern {
                  * @return std::string
                  */
                 std::string GetMetaDataAsString() {
-                    return this->meta_data.dump(1);
+                    return this->m_meta_data.dump(1);
                 }
 
                 /**
@@ -293,47 +297,47 @@ namespace lantern {
                  * @return nlohmann::json*
                  */
                 nlohmann::json* GetMetaDataPtr() {
-                    return &this->meta_data;
+                    return &this->m_meta_data;
                 }
 
                 /**
                  * @brief Print layer info
                  */
                 void PrintLayerInfo() {
-                    uint32_t convolve_index = 0;
-                    uint32_t pooling_index = 0;
-                    uint32_t index = 0;
+                    uint32_t convolve_index_ = 0;
+                    uint32_t pooling_index_ = 0;
+                    uint32_t index_ = 0;
 
                     for (const uint32_t& layer_size_ : m_LayersSize) {
                         lantern::utility::Vector<std::string> lines;
 
                         // Add layer information
-                        lines.push_back(std::format(" Layer : {}", index));
-                        lines.push_back(std::format(" Type : {}", lantern::cnn::node::GetNodeTypeAsString(this->m_NodeTypeOfLayer[index])));
+                        lines.push_back(std::format(" Layer : {}", index_));
+                        lines.push_back(std::format(" Type : {}", lantern::cnn::node::GetNodeTypeAsString(this->m_NodeTypeOfLayer[index_])));
 
                         // Add convolution info if applicable
-                        switch (this->m_NodeTypeOfLayer[index])
+                        switch (this->m_NodeTypeOfLayer[index_])
                         {
                         case lantern::cnn::node::NodeType::CONVOLVE: {
-                            const auto& [padding, stride, kernel_size, kernel_depth] = this->m_ConvolveLayerInfo[convolve_index];
+                            const auto& [padding_, stride_, kernel_size_, kernel_depth_] = this->m_ConvolveLayerInfo[convolve_index_];
                             lines.push_back(std::format(" Total Weights : {}", layer_size_));
                             lines.push_back(std::format(" Total Bias : {}", layer_size_));
                             lines.push_back(" Convolve Info:");
-                            lines.push_back(std::format("   - Kernel Size    : {}", kernel_size));
-                            lines.push_back(std::format("   - Padding        : {}", padding));
-                            lines.push_back(std::format("   - Stride Width   : {}", stride));
-                            lines.push_back(std::format("   - Depth          : {}", kernel_depth));
-                            convolve_index++;
+                            lines.push_back(std::format("   - Kernel Size    : {}", kernel_size_));
+                            lines.push_back(std::format("   - Padding        : {}", padding_));
+                            lines.push_back(std::format("   - Stride Width   : {}", stride_));
+                            lines.push_back(std::format("   - Depth          : {}", kernel_depth_));
+                            convolve_index_++;
                             break;
                         }
                         case lantern::cnn::node::NodeType::MAX_POOL:
                         case lantern::cnn::node::NodeType::AVG_POOL: {
-                            const auto& [stride, width, height] = this->m_PoolingLayerInfo[pooling_index];
+                            const auto& [stride_, width_, height_] = this->m_PoolingLayerInfo[pooling_index_];
                             lines.push_back(" Max Pooling Info:");
-                            lines.push_back(std::format("   - width         : {}", width));
-                            lines.push_back(std::format("   - height        : {}", height));
-                            lines.push_back(std::format("   - stride width  : {}", stride));
-                            pooling_index++;
+                            lines.push_back(std::format("   - width         : {}", width_));
+                            lines.push_back(std::format("   - height        : {}", height_));
+                            lines.push_back(std::format("   - stride width  : {}", stride_));
+                            pooling_index_++;
                             break;
                         }
                         }
@@ -345,7 +349,7 @@ namespace lantern {
                         }
                         std::println("+{:-^{}}+", "", 70);
 
-                        index++;
+                        index_++;
                     }
                 }
 
@@ -375,46 +379,46 @@ namespace nlohmann
     template <>
     struct adl_serializer<lantern::cnn::layer::PoolingLayerInfo>
     {
-        static lantern::cnn::layer::PoolingLayerInfo from_json(const json& j)
+        static lantern::cnn::layer::PoolingLayerInfo from_json(const json& _j)
         {
-            lantern::cnn::layer::PoolingLayerInfo pooling_info(
-                j["size_w"].get<uint32_t>(),
-                j["size_h"].get<uint32_t>(),
-                j["stride"].get<af::dim4>()
+            lantern::cnn::layer::PoolingLayerInfo pooling_info_(
+                _j["size_w"].get<uint32_t>(),
+                _j["size_h"].get<uint32_t>(),
+                _j["stride"].get<af::dim4>()
             );
-            return pooling_info;
+            return pooling_info_;
         }
 
-        static void to_json(json& j,const lantern::cnn::layer::PoolingLayerInfo& pooling_info)
+        static void to_json(json& _j,const lantern::cnn::layer::PoolingLayerInfo& _pooling_info)
         {
-            j = {
-                {"stride", pooling_info.stride},
-                {"size_w", pooling_info.size_w},
-                {"size_h", pooling_info.size_h}
+            _j = {
+                {"stride", _pooling_info.m_stride},
+                {"size_w", _pooling_info.m_size_w},
+                {"size_h", _pooling_info.m_size_h}
             };
         }
     };
     template <>
     struct adl_serializer<lantern::cnn::layer::ConvolveLayerInfo>
     {
-        static lantern::cnn::layer::ConvolveLayerInfo from_json(const json& j)
+        static lantern::cnn::layer::ConvolveLayerInfo from_json(const json& _j)
         {
-            lantern::cnn::layer::ConvolveLayerInfo convolve_info(
-                j["kernel_size"].get<uint32_t>(),
-                j["padding"].get<af::dim4>(),
-                j["stride"].get<af::dim4>(),
-                j["kernel_depth"].get<uint32_t>()
+            lantern::cnn::layer::ConvolveLayerInfo convolve_info_(
+                _j["kernel_size"].get<uint32_t>(),
+                _j["padding"].get<af::dim4>(),
+                _j["stride"].get<af::dim4>(),
+                _j["kernel_depth"].get<uint32_t>()
             );
-            return convolve_info;
+            return convolve_info_;
         }
 
-        static void to_json(json& j,const lantern::cnn::layer::ConvolveLayerInfo& convolve_info)
+        static void to_json(json& _j,const lantern::cnn::layer::ConvolveLayerInfo& _convolve_info)
         {
-            j = {
-                {"kernel_size", convolve_info.kernel_size},
-                {"stride", convolve_info.stride},
-                {"padding", convolve_info.padding},
-                {"kernel_depth", convolve_info.kernel_depth}
+            _j = {
+                {"kernel_size", _convolve_info.m_kernel_size},
+                {"stride", _convolve_info.m_stride},
+                {"padding", _convolve_info.m_padding},
+                {"kernel_depth", _convolve_info.m_kernel_depth}
             };
         }
     };
@@ -424,19 +428,19 @@ namespace nlohmann
 template <>
 struct std::formatter<lantern::utility::Vector<lantern::cnn::node::NodeType>> {
 
-   constexpr auto parse(std::format_parse_context& ctx) {
-       return ctx.begin();
+   constexpr auto parse(std::format_parse_context& _ctx) {
+       return _ctx.begin();
    }
 
-   auto format(const lantern::utility::Vector<lantern::cnn::node::NodeType>& obj, std::format_context& ctx) const {
+   auto format(const lantern::utility::Vector<lantern::cnn::node::NodeType>& _obj, std::format_context& _ctx) const {
 
-       std::ostringstream oss;
-       oss << "[";
-       for (size_t i = 0; i < obj.size(); ++i) {
-           if (i > 0) oss << ", ";
-           oss << "\n " << lantern::cnn::node::GetNodeTypeAsString(obj[i]);
+       std::ostringstream oss_;
+       oss_ << "[";
+       for (size_t i = 0; i < _obj.size(); ++i) {
+           if (i > 0) oss_ << ", ";
+           oss_ << "\n " << lantern::cnn::node::GetNodeTypeAsString(_obj[i]);
        }
-       oss << "\n]\n";
-       return std::format_to(ctx.out(), "{}", oss.str());
+       oss_ << "\n]\n";
+       return std::format_to(_ctx.out(), "{}", oss_.str());
    }
 };

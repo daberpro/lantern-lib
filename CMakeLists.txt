@@ -22,8 +22,8 @@ file(
 )
 
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/AutoGradient)
-# add_subdirectory(${CMAKE_SOURCE_DIR}/Examples)
+# add_subdirectory(${CMAKE_SOURCE_DIR}/AutoGradient)
+add_subdirectory(${CMAKE_SOURCE_DIR}/Examples)
 add_executable(${PROJECT_NAME} main.cpp pch.h ${HEADER_FILES})
 
 # only works on visual studio for debugging
@@ -42,25 +42,36 @@ target_include_directories(
 target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_PREFIX_PATH}/lib)
 target_link_libraries(
     ${PROJECT_NAME} PUBLIC 
-    AutoGradient 
-    ArrayFire::af
+    # AutoGradient 
+    ArrayFire::afcpu
     hdf5_cpp-static
 )
 target_precompile_headers(${PROJECT_NAME} PUBLIC pch.h)
 
 if(COPY_DATASET)
-    set(DATASET_DIR "${CMAKE_SOURCE_DIR}/Dataset/mnist")
-    set(DEST_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/dataset")
-
-    add_custom_target(copy_dataset ALL
-        COMMAND ${CMAKE_COMMAND} -E echo "Copying dataset..."
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${DATASET_DIR}"
-                "${DEST_DIR}"
-        COMMENT "Copying MNIST dataset to build folder"
-        VERBATIM
+    set(DATASETS
+        mnist
+        Iris_Flower
     )
 
-    # Make your example project depend on it
+    set(DEST_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/dataset")
+
+    # Create one target first
+    add_custom_target(copy_dataset ALL
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying datasets..."
+        COMMENT "Copying datasets to build folder"
+    )
+
+    # Append copy commands for each dataset
+    foreach(ds ${DATASETS})
+        add_custom_target(copy_dataset_${ds}
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    "${CMAKE_SOURCE_DIR}/Dataset/${ds}"
+                    "${DEST_DIR}/${ds}"
+        )
+        add_dependencies(copy_dataset copy_dataset_${ds})
+    endforeach()
+
+    # Make your project depend on the overall dataset copy
     add_dependencies(${PROJECT_NAME} copy_dataset)
 endif()

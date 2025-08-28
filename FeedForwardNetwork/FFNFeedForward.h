@@ -22,158 +22,153 @@ namespace lantern
 
             /**
              * @brief Feed Forward
-             *
-             * @param _layer
-             * @param _outputs
-             * @param _parameters
-             * @ingroup LanternFeedForward
+             * @param _layer 
              */
             inline void FeedForward(
-                lantern::ffn::layer::Layer &_layer,
-                lantern::utility::Vector<af::array> &_outputs,
-                lantern::utility::Vector<af::array> &_parameters)
+                lantern::ffn::layer::Layer &_layer
+            )
             {
 
-                af::array parameters, prev_output, current_output, weight, bias;
-                lantern::utility::Vector<uint32_t> *all_layer_sizes = _layer.GetAllLayerSizes();
-                lantern::utility::Vector<lantern::ffn::node::NodeType> *all_layer_type = _layer.GetAllNodeTypeOfLayer();
+                af::array parameters_from_layer_, prev_output_, current_output_, weight_, bias_;
+                lantern::utility::Vector<uint32_t> *all_layer_sizes_ = _layer.GetAllLayerSizes();
+                lantern::utility::Vector<lantern::ffn::node::NodeType> *all_layer_type_ = _layer.GetAllNodeTypeOfLayer();
 
-                for (uint32_t current_layer = 0; current_layer < (*all_layer_sizes).size() - 1; current_layer++)
+                auto* parameters_ = _layer.GetParameters();
+                auto* outputs_ = _layer.GetOutputs();
+                uint32_t all_layer_size_ = (*all_layer_sizes_).size();
+
+                // set current layer to start at 1 because in index 0 was input
+                for (uint32_t current_layer = 1; current_layer < all_layer_size_; current_layer++)
                 {
-                    
 
-                    prev_output = _outputs[current_layer];
-                    parameters = _parameters[current_layer];
+                    prev_output_ = (*outputs_)[current_layer - 1];
+                    parameters_from_layer_ = (*parameters_)[current_layer - 1];
 
-                    weight = parameters(
+                    weight_ = parameters_from_layer_(
                         af::span,
-                        af::seq(0, parameters.dims(1) - 2)
+                        af::seq(0, parameters_from_layer_.dims(1) - 2)
                     );
 
-                    bias = parameters.col(parameters.dims(1) - 1);
+                    bias_ = parameters_from_layer_.col(parameters_from_layer_.dims(1) - 1);
 
-                    current_output = af::matmul(weight,prev_output) + bias;
-                    current_output.eval();
+                    current_output_ = af::matmul(weight_,prev_output_) + bias_;
+                    current_output_.eval();
 
-                    // adding 1 to skip input layer
-                    switch ((*all_layer_type)[current_layer + 1])
+                    switch ((*all_layer_type_)[current_layer])
                     {
                     case lantern::ffn::node::NodeType::LINEAR:
                     {
-                        current_output = lantern::activation::Linear(current_output);
+                        current_output_ = lantern::activation::Linear(current_output_);
 
                         break;
                     }
                     case lantern::ffn::node::NodeType::SIGMOID:
                     {
-                        current_output = lantern::activation::Sigmoid(current_output);
+                        current_output_ = lantern::activation::Sigmoid(current_output_);
 
                         break;
                     }
                     case lantern::ffn::node::NodeType::RELU:
                     {
-                        current_output = lantern::activation::ReLU(current_output);
+                        current_output_ = lantern::activation::ReLU(current_output_);
 
                         break;
                     }
                     case lantern::ffn::node::NodeType::TANH:
                     {
-                        current_output = lantern::activation::TanH(current_output);
+                        current_output_ = lantern::activation::TanH(current_output_);
 
                         break;
                     }
                     case lantern::ffn::node::NodeType::SWISH:
                     {
-                        current_output = lantern::activation::Swish(current_output);
+                        current_output_ = lantern::activation::Swish(current_output_);
 
                         break;
                     }
                     }
 
-                    // adding 1 to skip input layer
-                    _outputs[current_layer + 1] = current_output;
+                    (*outputs_)[current_layer] = current_output_;
                 }
             }
 
             /**
-             * @brief Initalize the layer and FFN parameters
+             * @brief Initalize the layer and FFN parameters_
              * @tparam Optimizer 
              * @param _layer 
-             * @param _parameters 
-             * @param _prev_gradient 
-             * @param _outputs 
              * @param _optimizer 
-             * @ingroup LanternFeedForward
              */
             template <typename Optimizer = lantern::ffn::optimizer::AdaptiveMomentEstimation>
             inline void Initialize(
                 lantern::ffn::layer::Layer &_layer,
-                lantern::utility::Vector<af::array> &_parameters,
-                lantern::utility::Vector<af::array> &_prev_gradient,
-                lantern::utility::Vector<af::array> &_outputs,
                 Optimizer &_optimizer)
             {
-                auto &stack_previous_gradient = _optimizer.GetStackPrevGrad();
-                auto &vector_velocity = _optimizer.GetVectorVelocity();
-                auto *all_node_type = _layer.GetAllNodeTypeOfLayer();
+                auto &stack_previous_gradient_ = _optimizer.GetStackPrevGrad();
+                auto &vector_velocity_ = _optimizer.GetVectorVelocity();
 
-                _parameters.clean();
-                _prev_gradient.clean();
-                stack_previous_gradient.clean();
-                vector_velocity.clean();
+                auto* all_node_type_ = _layer.GetAllNodeTypeOfLayer();
+                auto* parameters_ = _layer.GetParameters();
+                auto* outputs_ = _layer.GetOutputs();
+                auto* prev_gradient_ = _layer.GetPrevradient();
 
-                auto *layers = _layer.GetAllLayerSizes();
-                for (uint32_t i = 0; i < (*layers).size() - 1; i++)
+
+                parameters_->clear();
+                prev_gradient_->clear();
+                stack_previous_gradient_.clear();
+                vector_velocity_.clear();
+
+                auto *layers_ = _layer.GetAllLayerSizes();
+                for (uint32_t i = 0; i < (*layers_).size() - 1; i++)
                 {
-                    _parameters.push_back(
+                    parameters_->push_back(
                         af::randn(
-                            (*layers)[i + 1],
-                            (*layers)[i] + 1,
+                            (*layers_)[i + 1],
+                            (*layers_)[i] + 1,
                             f64
                         )
                     );
-                    stack_previous_gradient.push_back(
+                    stack_previous_gradient_.push_back(
                         af::constant(
                             0.0f,
-                            (*layers)[i + 1],
-                            (*layers)[i] + 1,
+                            (*layers_)[i + 1],
+                            (*layers_)[i] + 1,
                             f64
                         )
                     );
-                    vector_velocity.push_back(
+                    vector_velocity_.push_back(
                         af::constant(
                             0.0f,
-                            (*layers)[i + 1],
-                            (*layers)[i] + 1,
+                            (*layers_)[i + 1],
+                            (*layers_)[i] + 1,
                             f64
                         )
                     );
-                    _prev_gradient.push_back(
+                    prev_gradient_->push_back(
                         af::constant(
                             0.0f,
-                            (*layers)[i],
+                            (*layers_)[i],
                             1,
                             f64
                         )
                     );
-                    _outputs.push_back(
+                    outputs_->push_back(
                         af::constant(
                             0.0f,
-                            (*layers)[i],
+                            (*layers_)[i],
                             1,
                             f64
                         )
                     );
 
-                    switch ((*all_node_type)[i])
+                    switch ((*all_node_type_)[i])
                     {
                     case lantern::ffn::node::NodeType::SIGMOID:
                     case lantern::ffn::node::NodeType::TANH:
                     {
                         lantern::init::XavierNormInit(
-                            (*layers)[i],
-                            (*layers)[i + 1],
-                            _parameters.back()
+                            (*layers_)[i],
+                            (*layers_)[i + 1],
+                            parameters_->back()
                         );
                         break;
                     }
@@ -182,26 +177,30 @@ namespace lantern
                     case lantern::ffn::node::NodeType::SWISH:
                     {
                         lantern::init::XavierUnifInit(
-                            (*layers)[i],
-                            (*layers)[i + 1],
-                            _parameters.back()
+                            (*layers_)[i],
+                            (*layers_)[i + 1],
+                            parameters_->back()
                         );
                         break;
                     }
                     }
 
-                    // set bias to be 0
-                    af::array &params = _parameters.back();
-                    params.col(params.dims(1) - 1) = af::constant(0.0f, params.dims(0), f64);
+                    // set bias_ to be 0
+                    af::array &params_ = parameters_->back();
+                    params_.col(params_.dims(1) - 1) = af::constant(0.0f, params_.dims(0), f64);
                 }
 
-                _outputs.push_back(
+                outputs_->push_back(
                     af::constant(
                         0.0f,
-                        (*layers).back(),
+                        (*layers_).back(),
                         1,
                         f64
                     )
+                );
+
+                prev_gradient_->push_back(
+                    af::array()
                 );
             }
         }

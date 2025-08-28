@@ -1,6 +1,8 @@
 #pragma once
 #include "../pch.h"
 #include "Vector.h"
+#include "Utility.h"
+#include "LanternString.h"
 #include <H5Cpp.h>
 
 /**
@@ -11,50 +13,18 @@ namespace lantern {
 
     namespace file {
 
-
         /**
          * @brief Lantern CSV file wrapper
          * @ingroup LanternFile
          */
         class CSVFile {
         private:
-            lantern::utility::Vector<lantern::utility::Vector<std::string>> data;
+            lantern::utility::Vector<lantern::utility::Vector<lantern::string::String>> m_data;
+            std::unordered_map<std::string, uint32_t> m_index_map;
+            uint32_t m_index = 0;
 
-            /**
-             * @brief Convert string into T type
-             * @tparam T 
-             * @param _str 
-             * @return T
-             */
-            template <typename T>
-            T ConvertFromString(const std::string& _str) {
-                if constexpr (std::is_arithmetic_v<T>) {
-                    T value{};
-                    auto [ptr, e] = std::from_chars(_str.data(),_str.data() + _str.size(),value);
-                    if (e != std::errc{}) {
-                        std::println("{}",_str);
-                        throw std::runtime_error("Error CSVFile, ivalid conversion");
-                    }
-                    return value;
-                }
-                else {
-                    if constexpr (std::is_same_v<T,std::string>) {
-                        return _str;
-                    }
-                    else {
-                        T value{};
-                        std::istringstream iss(_str);
-                        iss >> value;
-                        if (iss.fail() || !iss.eof()) {
-                            throw std::runtime_error("Error CSVFile,conversion failed or extra characters found.");
-                        }
-                        return value;
-                    }
-                }
-            }
-
-            void CheckFileEmpty(){
-                if(this->data.empty()){
+            void CheckFileEmpty() const {
+                if(this->m_data.empty()){
                     throw std::runtime_error(std::format("Error CSVFile, file is empty"));
                 }
             }
@@ -63,18 +33,26 @@ namespace lantern {
 
             CSVFile(){}
             CSVFile(CSVFile&& _file) noexcept {
-                this->data.movePtrData(_file.data);
+                this->m_data = std::move(_file.m_data);
             }
 
             void operator =(CSVFile&& _file) noexcept {
-                this->data.movePtrData(_file.data);
+                this->m_data = std::move(_file.m_data);
             }
             /**
              * @brief Get pointer to data inside CSV file
              * @return lantern::utility::Vector<lantern::utility::Vector<std::string>>
              */
             auto* GetDataPtr() {
-                return &this->data;
+                return &this->m_data;
+            }
+
+            /**
+             * @brief Get pointer of index map
+             * @return std::unordered_map<std::string, uint32_t>*
+             */
+            auto* GetIndexMapPtr() {
+                return &this->m_index_map;
             }
 
             /**
@@ -85,17 +63,20 @@ namespace lantern {
              * @return T
              */
             template <typename T>
-            T Get(const uint32_t& row, const uint32_t col) {
+            T Get(const uint32_t& _row, const uint32_t _col) {
                 this->CheckFileEmpty();
-                if (col >= this->data.front().size()) {
-                    throw std::runtime_error(std::format("Error CSVFile, cannot access column index \"{}\" out of bound", col));
+                if (_col >= this->m_data.front().size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access column index \"{}\" out of bound", _col));
                 }
-                if (row >= this->data.size()) {
-                    throw std::runtime_error(std::format("Error CSVFile, cannot access row index \"{}\" out of bound", row));
+                if (_row >= this->m_data.size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access row index \"{}\" out of bound", _row));
                 }
-                return this->ConvertFromString<T>(this->data[row][col]);
+                return this->m_data[_row][_col].as<T>();
             }
 
+            // ====================================================================================
+            // COLUMN DEFINITION
+            // ====================================================================================
             /**
              * @brief Get column at index and cast to T type
              * @tparam T 
@@ -105,22 +86,64 @@ namespace lantern {
             template <typename T>
             auto Col(const uint32_t& _index) {
                 this->CheckFileEmpty();
-                if (_index >= this->data.front().size()) {
+                if (_index >= this->m_data.front().size()) {
                     throw std::runtime_error(std::format("Error CSVFile, cannot access column index \"{}\" out of bound", _index));
                 }
-                lantern::utility::Vector<T> result(this->data.size());
-                result.explicitTotalItem(this->data.size());
+                lantern::utility::Vector<T> result_(this->m_data.size());
+                result_.explicitTotalItem(this->m_data.size());
                 std::transform(
-                    this->data.begin(),
-                    this->data.end(),
-                    result.begin(),
-                    [&](const lantern::utility::Vector<std::string>& row) -> T {
-                        return this->ConvertFromString<T>(row[_index]);
+                    this->m_data.begin(),
+                    this->m_data.end(),
+                    result_.begin(),
+                    [&](const lantern::utility::Vector<lantern::string::String>& _row) -> T {
+                        return _row[_index].as<T>();
                     }
                 );
-                return result;
+                return result_;
             }
 
+            template <typename T>
+            auto Col(const uint32_t& _index, const uint32_t& _start_index, const uint32_t& _count) {
+                this->CheckFileEmpty();
+                if (_index >= this->m_data.front().size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access column index \"{}\" out of bound", _index));
+                }
+                
+                lantern::utility::Vector<lantern::string::String> holder_(this->m_data.size());
+                for(auto& row_ : this->m_data){
+                    holder_.push_back(row_[_index]);
+                }
+
+                auto result_ = lantern::utility::Vector<T>(_count);
+                auto span_ = std::span<lantern::string::String>(holder_.data(),holder_.size());
+                auto subspan_ = span_.subspan(_start_index,_count);
+                if constexpr (std::is_same_v<T,std::string> || std::is_same_v<T,lantern::string::String>){
+                    for(uint32_t i = 0; i < subspan_.size(); i++){
+                        result_.push_back(
+                            static_cast<T>(subspan_[i])
+                        );
+                    }
+                    return result_;
+                }
+                
+                result_.explicitTotalItem(_count);
+                std::transform(
+                    subspan_.begin(),
+                    subspan_.end(),
+                    result_.begin(),
+                    [&](const lantern::string::String& _str) -> T {
+                        return _str.as<T>();
+                    }
+                );
+
+                return result_;
+            }
+
+            // ====================================================================================
+
+            // ====================================================================================
+            // ROW DEFINITION
+            // ====================================================================================
             /**
              * @brief Get row at index and cast to T type
              * @tparam T
@@ -130,68 +153,413 @@ namespace lantern {
             template <typename T>
             auto Row(const uint32_t& _index) {
                 this->CheckFileEmpty();
-                if (_index >= this->data.size()) {
+                if (_index >= this->m_data.size()) {
                     throw std::runtime_error(std::format("Error CSVFile, cannot access row index \"{}\" out of bound", _index));
                 }
-
-                auto& data_ = this->data[_index];
-                uint32_t allocated_size = data_.size();
-                lantern::utility::Vector<T> result(allocated_size);
-                result.explicitTotalItem(allocated_size);
+                
+                auto& data_ = this->m_data[_index];
+                uint32_t allocated_size_ = data_.size();
+                lantern::utility::Vector<T> result_(allocated_size_);
+                
+                if constexpr (std::is_same_v<T,std::string> || std::is_same_v<T,lantern::string::String>){
+                    for(uint32_t i = 0; i < allocated_size_; i++){
+                        result_.push_back(
+                            static_cast<T>(data_[i])
+                        );
+                    }
+                    return result_;
+                }
+                
+                if(result_.size() < data_.size()) result_.explicitTotalItem(allocated_size_);
                 std::transform(
                     data_.begin(),
                     data_.end(),
-                    result.begin(),
-                    [&](const std::string_view& _str) -> T {
-                        return this->ConvertFromString<T>(_str);
+                    result_.begin(),
+                    [&](const lantern::string::String& _str) -> T {
+                        return _str.as<T>();
                     }
                 );
-                return result;
+                return result_;
+            }
+
+            /**
+             * @brief Get row at index and cast to T type, and store into utility vector
+             * @tparam T
+             * @param _target_out
+             * @param _index
+             * @return lantern::utility::Vector<T>
+             */
+            template <typename T>
+            auto Row(lantern::utility::Vector<T>& _target_out,const uint32_t& _index) {
+                this->CheckFileEmpty();
+                if (_index >= this->m_data.size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access row index \"{}\" out of bound", _index));
+                }
+                
+                auto& data_ = this->m_data[_index];
+                uint32_t allocated_size_ = data_.size();
+                if(_target_out.size() < allocated_size_){
+                    _target_out.resizeCapacity(allocated_size_);
+                    _target_out.explicitTotalItem(allocated_size_);
+                }
+                
+                if constexpr (std::is_same_v<T,std::string> || std::is_same_v<T,lantern::string::String>){
+                    for(uint32_t i = 0; i < allocated_size_; i++){
+                        new(_target_out.ptrAt(i)) T(static_cast<T>(data_[i]));
+                    }
+                    return;
+                }
+                
+                std::transform(
+                    data_.begin(),
+                    data_.end(),
+                    _target_out.begin(),
+                    [&](const lantern::string::String& _str) -> T {
+                        return _str.as<T>();
+                    }
+                );
+            }
+            
+            /**
+             * @brief Get row at index, and get columns of row as define range
+             * @tparam T
+             * @param _index
+             * @param _index_start
+             * @param _count 
+             * @return lantern::utility::Vector<T>
+             */
+            template <typename T>
+            auto Row(const uint32_t _index,const uint32_t& _index_start,const uint32_t& _count) {
+                this->CheckFileEmpty();
+                if (_index_start + _count >= this->m_data.size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access row index \"{}\" out of bound", _index_start + _count));
+                }
+
+                auto result_ = lantern::utility::Vector<T>(_count);
+                auto& data_ = this->m_data[_index];
+                auto span_ = std::span<lantern::string::String>(data_.data(), data_.size());
+                auto subspan_ = span_.subspan(_index_start,_count);
+
+                if constexpr (std::is_same_v<T,std::string> || std::is_same_v<T,lantern::string::String>){
+                    for(uint32_t i = 0; i < subspan_.size(); i++){
+                        result_.push_back(
+                            static_cast<T>(subspan_[i])
+                        );
+                    }
+                    return result_;
+                }
+
+                // this only need if we not use push_back or emplace_back
+                result_.explicitTotalItem(_count);
+                std::transform(
+                    subspan_.begin(),
+                    subspan_.end(),
+                    result_.begin(),
+                    [&](const lantern::string::String& _str) -> T {
+                        return _str.as<T>();
+                    }
+                );
+
+                return result_;
+            }
+
+            /**
+             * @brief Get row at index of span, and get columns of row as define range
+             * @tparam T
+             * @param _span
+             * @param _index
+             * @param _index_start
+             * @param _count 
+             * @return lantern::utility::Vector<T>
+             */
+            template <typename T>
+            auto Row(const std::span<lantern::utility::Vector<lantern::string::String>>& _span,const uint32_t _index,const uint32_t& _index_start,const uint32_t& _count) {
+                if(_span.empty()){
+                    throw std::runtime_error("Error CSVFile, span are empty");
+                }
+                if(_index > _span.size()){
+                    throw std::runtime_error(std::format("Error CSVFile, row of span index \"{}\", out of bound", _index));
+                }
+                if (_index_start + _count > _span.front().size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access range column \"{}\" of row index \"{}\", out of bound", _index_start + _count, _index));
+                }
+
+                auto result_ = lantern::utility::Vector<T>(_count);
+                auto& data_ = _span[_index];
+                auto span_ = std::span<lantern::string::String>(data_.data(), data_.size());
+                auto subspan_ = span_.subspan(_index_start,_count);
+
+                if constexpr (std::is_same_v<T,std::string> || std::is_same_v<T,lantern::string::String>){
+                    for(uint32_t i = 0; i < subspan_.size(); i++){
+                        result_.push_back(static_cast<T>(subspan_[i]));
+                    }
+                    return result_;
+                }
+
+                // this only need if we not use push_back or emplace_back
+                if(result_ < subspan_.size()) result_.explicitTotalItem(_count);
+                std::transform(
+                    subspan_.begin(),
+                    subspan_.end(),
+                    result_.begin(),
+                    [&](const lantern::string::String& _str) -> T {
+                        return _str.as<T>();
+                    }
+                );
+
+                return result_;
+            }
+
+            /**
+             * @brief Get row at index of span, and get columns of row as define range and store it into utility vector
+             * @tparam T
+             * @param _target_out
+             * @param _span
+             * @param _index
+             * @param _start_index
+             * @param _count 
+             */
+            template <typename T>
+            void Row(lantern::utility::Vector<T>& _target_out,const std::span<lantern::utility::Vector<lantern::string::String>>& _span,const uint32_t _index,const uint32_t& _index_start,const uint32_t& _count) {
+                if(_span.empty()){
+                    throw std::runtime_error("Error CSVFile, span are empty");
+                }
+                if(_index > _span.size()){
+                    throw std::runtime_error(std::format("Error CSVFile, row of span index \"{}\", out of bound", _index));
+                }
+                if (_index_start + _count > _span.front().size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access range column \"{}\" of row index \"{}\", out of bound", _index_start + _count, _index));
+                }
+
+                auto& data_ = _span[_index];
+                auto span_ = std::span<lantern::string::String>(data_.data(), data_.size());
+                auto subspan_ = span_.subspan(_index_start,_count);
+
+                // this only need if we not use push_back or emplace_back
+                if(_target_out.size() < subspan_.size()){
+                    _target_out.resizeCapacity(_count);
+                    _target_out.explicitTotalItem(_count);
+                }
+
+                if constexpr (std::is_same_v<T,std::string> || std::is_same_v<T,lantern::string::String>){
+                    for(uint32_t i = 0; i < subspan_.size(); i++){
+                        new(_target_out.ptrAt(i)) T(static_cast<T>(subspan_[i]));
+                    }
+                    return;
+                }
+
+                std::transform(
+                    subspan_.begin(),
+                    subspan_.end(),
+                    _target_out.begin(),
+                    [&](const lantern::string::String& _str) -> T {
+                        return _str.as<T>();
+                    }
+                );
+            }
+
+            /**
+             * @brief Get row of span at index
+             * @tparam T
+             * @param _span
+             * @param _index
+             * @return lantern::utility::Vector<T>
+             */
+            template <typename T>
+            auto Row(const std::span<lantern::utility::Vector<lantern::string::String>>& _span,const uint32_t& _index) {
+                if(_span.empty()){
+                    throw std::runtime_error("Error CSVFile, span are empty");
+                }
+                if(_index > _span.size()){
+                    throw std::runtime_error(std::format("Error CSVFile, row of span index \"{}\", out of bound", _index));
+                }
+
+                auto& data_ = _span[_index];
+                uint32_t allocated_size_ = data_.size();
+                lantern::utility::Vector<T> result_(allocated_size_);
+                result_.explicitTotalItem(allocated_size_);
+                std::transform(
+                    data_.begin(),
+                    data_.end(),
+                    result_.begin(),
+                    [&](const lantern::string::String& _str) -> T {
+                        return _str.as<T>();
+                    }
+                );
+                return result_;
+            }
+
+            /**
+             * @brief Get row of span at index, and store it into utility vector
+             * @tparam T
+             * @param _target_out
+             * @param _span
+             * @param _index
+             */
+            template <typename T>
+            void Row(lantern::utility::Vector<T>& _target_out,const std::span<lantern::utility::Vector<lantern::string::String>>& _span,const uint32_t& _index) {
+                if(_span.empty()){
+                    throw std::runtime_error("Error CSVFile, span are empty");
+                }
+                if(_index > _span.size()){
+                    throw std::runtime_error(std::format("Error CSVFile, row of span index \"{}\", out of bound", _index));
+                }
+
+                auto& data_ = _span[_index];
+                uint32_t allocated_size_ = data_.size();
+                if(_target_out.size() < allocated_size_){
+                    _target_out.resizeCapacity(allocated_size_);
+                    _target_out.explicitTotalItem(allocated_size_);
+                }
+                std::transform(
+                    data_.begin(),
+                    data_.end(),
+                    _target_out.begin(),
+                    [&](const lantern::string::String& _str) -> T {
+                        return _str.as<T>();
+                    }
+                );
+            }
+
+            // ====================================================================================
+
+           
+            /**
+             * @brief Get specific value string in row, and mapping it into numeric 
+             * @param _index 
+             * @param _index_start 
+             * @param _count 
+             * @return lantern::utility::Vector<uint32_t>
+             */
+            auto RowIndexMapping(const uint32_t _index,const uint32_t& _index_start,const uint32_t& _count) {
+                this->CheckFileEmpty();
+                if (_index_start + _count >= this->m_data.size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access row index \"{}\" out of bound", _index));
+                }
+
+                auto result_ = lantern::utility::Vector<uint32_t>(_count);
+                auto& data_ = this->m_data[_index];
+                auto span_ = std::span<lantern::string::String>(data_.data(), data_.size());
+                auto subspan_ = span_.subspan(_index_start,_count);
+
+                for(uint32_t i = 0; i < subspan_.size(); i++){
+                    auto str_ = static_cast<const std::string>(subspan_[i]);
+                    if(this->m_index_map.contains(str_)){
+                        result_.push_back(this->m_index_map[str_]);
+                    }else{
+                        this->m_index_map.insert({
+                            str_,
+                            this->m_index++
+                        });
+                        result_.push_back(this->m_index_map[str_]);
+                    };   
+                }
+                return result_;
+            }
+
+            void RowIndexMapping(lantern::utility::Vector<uint32_t>& _target_out,const std::span<lantern::utility::Vector<lantern::string::String>>& _span,const uint32_t _index,const uint32_t& _index_start,const uint32_t& _count) {
+                if (_index_start + _count >= _span.size()) {
+                    throw std::runtime_error(std::format("Error CSVFile, cannot access row index \"{}\" out of bound", _index));
+                }
+
+                auto& data_ = _span[_index];
+                auto span_ = std::span<lantern::string::String>(data_.data(), data_.size());
+                auto subspan_ = span_.subspan(_index_start,_count);
+
+                if(_target_out.size() < subspan_.size()){
+                    _target_out.resizeCapacity(subspan_.size());
+                    _target_out.explicitTotalItem(subspan_.size());
+                }
+                for(uint32_t i = 0; i < subspan_.size(); i++){
+                    auto str_ = static_cast<const std::string>(subspan_[i]);
+                    if(this->m_index_map.contains(str_)){
+                        new(_target_out.ptrAt(i)) uint32_t(this->m_index_map[str_]);
+                    }else{
+                        this->m_index_map.insert({
+                            str_,
+                            this->m_index++
+                        });
+                        new(_target_out.ptrAt(i)) uint32_t(this->m_index_map[str_]);
+                    };   
+                }
+                return;
             }
 
             template <typename T>
             auto ColsWithHeader() {
                 this->CheckFileEmpty();
-                std::unordered_map<std::string, lantern::utility::Vector<T>> result;
-                for(auto& col : this->data.front()) {
-                    result[col] = lantern::utility::Vector<T>(this->data.size() - 1);
-                    result[col].explicitTotalItem(this->data.size() - 1); // reserve space for the column
-                    std::transform(
-                        std::next(this->data.begin()),
-                        this->data.end(),
-                        result[col].begin(),
-                        [&](const lantern::utility::Vector<std::string>& row) -> T {
-                            return this->ConvertFromString<T>(row[col]);
-                        }
-                    );
+                std::unordered_map<std::string_view, lantern::utility::Vector<T>> result_;
+                for(auto& first_col : this->m_data.front()) {
+                    auto& row = result_[first_col];
+                    row = lantern::utility::Vector<T>(this->m_data.size() - 1);
+                    row.explicitTotalItem(this->m_data.size() - 1); // reserve space for the column
+                    
+                    for(auto& str_ : row){
+                        std::transform(
+                            std::next(this->m_data.begin()),
+                            this->m_data.end(),
+                            row.begin(),
+                            [&](const lantern::string::String& _row) -> T {
+                                return _row.as<T>();
+                            }
+                        );
+                    }
                 }
-                return result;
+                return result_;
             }
 
             template <typename T>
             auto RowsWithHeader() {
                 this->CheckFileEmpty();
-                std::unordered_map<std::string, lantern::utility::Vector<T>> result;
-                for(auto& row : this->data) {
-                    result[row.front()] = lantern::utility::Vector<T>(row.size() - 1);
-                    result[row.front()].explicitTotalItem(row.size() - 1); // reserve space for the row
+                std::unordered_map<std::string, lantern::utility::Vector<T>> result_;
+                for(auto& row : this->m_data) {
+                    result_[row.front()] = lantern::utility::Vector<T>(row.size() - 1);
+                    result_[row.front()].explicitTotalItem(row.size() - 1); // reserve space for the row
                     std::transform(
                         std::next(row.begin()),
                         row.end(),
-                        result[row.front()].begin(),
+                        result_[row.front()].begin(),
                         [&](const std::string& _str) -> T {
-                            return this->ConvertFromString<T>(_str);
+                            return lantern::utility::ConvertFromString<T>(_str);
                         }
                     );
                 }
-                return result;
+                return result_;
+            }
+
+            template <typename T>
+            auto RowsWithHeader(const uint32_t& _index_of_header) {
+                this->CheckFileEmpty();
+                std::unordered_map<std::string, lantern::utility::Vector<T>> result_;
+                for(auto& row : this->m_data) {
+                    result_[row[_index_of_header]] = lantern::utility::Vector<T>(row.size() - 1);
+                    for(uint32_t i = 0; i < row.size(); i++){
+                        if(i == _index_of_header){
+                            continue;
+                        }
+                        result_[row[_index_of_header]].push_back(
+                            lantern::utility::ConvertFromString<T>(row[i])
+                        );
+                    }
+                }
+                return result_;
             }
 
             auto GetPtrRow(const uint32_t& _index) {
-                if (_index >= this->data.size()) {
+                if (_index >= this->m_data.size()) {
                     throw std::runtime_error(std::format("Error CSVFile, cannot access row index \"{}\" out of bound", _index));
                 }
-                return &this->data[_index];
+                return &this->m_data[_index];
+            }
+
+            uint32_t GetRowSize() {
+                this->CheckFileEmpty();
+                return this->m_data.size();
+            }
+
+            uint32_t GetColSize(){
+                this->CheckFileEmpty();
+                return this->m_data.front().size();
             }
 
         };
@@ -205,8 +573,8 @@ namespace lantern {
         [[nodiscard]]
         inline CSVFile ReadCSVFile(const std::filesystem::path& _path) {
            
-            CSVFile result;
-            auto& data = (*result.GetDataPtr());
+            CSVFile result_;
+            auto& data_ = (*result_.GetDataPtr());
             
             if (!std::filesystem::exists(_path)) {
                 throw std::runtime_error(std::format("Error CSVReader, cannot access file path \"{}\" looks like deleted or moved", _path.string()));
@@ -214,26 +582,26 @@ namespace lantern {
 
             // first check extension
             if (std::filesystem::is_regular_file(_path)) {
-                std::string ext = _path.extension().string(), col_data, line;
-                std::transform(ext.begin(), ext.end(), ext.begin(), [](const char& d) {
-                    return std::tolower(d);
+                std::string ext_ = _path.extension().string(), col_data_, line_;
+                std::transform(ext_.begin(), ext_.end(), ext_.begin(), [](const char& _d) {
+                    return std::tolower(_d);
                 });
-                if (ext.compare(".csv") == 0) {
-                    std::ifstream file(_path);
-                    if (!file.is_open()) {
-                        throw std::runtime_error(std::format("Error CSVReader, failed to open file \"{}\"", ext));
+                if (ext_.compare(".csv") == 0) {
+                    std::ifstream file_(_path);
+                    if (!file_.is_open()) {
+                        throw std::runtime_error(std::format("Error CSVReader, failed to open file \"{}\"", ext_));
                     }
 
-                    while (std::getline(file,line)) {
-                        data.push_back(lantern::utility::Vector<std::string>(20));
-                        std::stringstream ss(line);
+                    while (std::getline(file_,line_)) {
+                        data_.push_back(lantern::utility::Vector<lantern::string::String>(20));
+                        std::stringstream ss(line_);
 
-                        while (std::getline(ss,col_data,',')) {
-                            data.back().push_back(col_data);
+                        while (std::getline(ss,col_data_,',')) {
+                            data_.back().push_back(col_data_);
                         }
 
-                        if (!data.empty()) {
-                            if (data.front().size() != data.back().size()) {
+                        if (!data_.empty()) {
+                            if (data_.front().size() != data_.back().size()) {
                                 throw std::runtime_error(std::format("Error ReadCSVFile, the file \"{}\" has different columns sizes", _path.string()));
                             }
                         }
@@ -241,14 +609,15 @@ namespace lantern {
                     
                 }
                 else {
-                    throw std::runtime_error(std::format("Error CSVReader, the file extension \"{}\" is not json file", ext));
+                    throw std::runtime_error(std::format("Error CSVReader, the file extension \"{}\" is not json file", ext_));
                 }
             }
             else {
                 throw std::runtime_error(std::format("Error CSVReader, the path \"{}\" is not file path", _path.string()));
             }
 
-            return result;
+            std::println("File size {}",data_.size());
+            return result_;
         }
         /**
          * @brief Read json file from given path
@@ -259,7 +628,7 @@ namespace lantern {
         [[nodiscard]]
         inline nlohmann::json JSONReader(const std::filesystem::path& _path) {
 
-            nlohmann::json result;
+            nlohmann::json result_;
 
             if (!std::filesystem::exists(_path)) {
                 throw std::runtime_error(std::format("Error JSONReader, cannot access file path \"{}\" looks like deleted or moved", _path.string()));
@@ -267,32 +636,32 @@ namespace lantern {
 
             // first check extension
             if (std::filesystem::is_regular_file(_path)) {
-                std::string ext = _path.extension().string();
-                std::transform(ext.begin(), ext.end(), ext.begin(), [](const char& d) {
-                    return std::tolower(d);
+                std::string ext_ = _path.extension().string();
+                std::transform(ext_.begin(), ext_.end(), ext_.begin(), [](const char& _d) {
+                    return std::tolower(_d);
                 });
-                if (ext.compare(".json") == 0) {
-                    std::ifstream file(_path);
-                    if (!file.is_open()) {
-                        throw std::runtime_error(std::format("Error JSONReader, failed to open file \"{}\"", ext));
+                if (ext_.compare(".json") == 0) {
+                    std::ifstream file_(_path);
+                    if (!file_.is_open()) {
+                        throw std::runtime_error(std::format("Error JSONReader, failed to open file \"{}\"", ext_));
                     }
 
                     try {
-                        file >> result;
+                        file_ >> result_;
                     }
-                    catch (nlohmann::json::parse_error& err) {
-                        throw std::runtime_error(std::format("Error JSONReader, because {}",err.what()));
+                    catch (nlohmann::json::parse_error& _err) {
+                        throw std::runtime_error(std::format("Error JSONReader, because {}",_err.what()));
                     }
                 }
                 else {
-                    throw std::runtime_error(std::format("Error JSONReader, the file extension \"{}\" is not json file", ext));
+                    throw std::runtime_error(std::format("Error JSONReader, the file extension \"{}\" is not json file", ext_));
                 }
             }
             else {
                 throw std::runtime_error(std::format("Error JSONReader, the path \"{}\" is not file path",_path.string()));
             }
 
-            return result;
+            return result_;
         }
 
         /**
@@ -301,56 +670,61 @@ namespace lantern {
         class LanternHDF5 {
         private:
 
-            H5std_string filename;
-            H5::H5File file;
-            H5::Group active_group;
-            std::unordered_map<std::string,H5::DataSet> datasets;
-            std::unordered_map<std::string,H5::DataSpace> dataspaces;
-            std::unordered_map<std::string,H5::Group> groups;
-            std::unordered_map<std::string,H5::Attribute> attributes;
+            H5std_string m_filename;
+            H5::H5File m_file;
+            H5::Group m_active_group;
+            std::unordered_map<std::string,H5::DataSet> m_datasets;
+            std::unordered_map<std::string,H5::DataSpace> m_dataspaces;
+            std::unordered_map<std::string,H5::Group> m_groups;
+            std::unordered_map<std::string,H5::Attribute> m_attributes;
+
+            void PrintError(const std::string& _message){
+                std::println("Error LanternHDF5, {}", _message);
+            }
 
             /**
              * @brief Get all dataset,groups, and attributes from active file
              * @param root_group 
              */
-            void GetAllDataInfo(const H5::Group& root_group) {
-                lantern::utility::Vector<H5::Group> groups_stack = {root_group};
-                lantern::utility::Vector<std::string> current_path_stack = {""};
-                std::unordered_set<std::string> visited_groups;
+            void GetAllDataInfo(const H5::Group& _root_group) {
+                H5::Exception::dontPrint();
+                lantern::utility::Vector<H5::Group> groups_stack_ = {_root_group};
+                lantern::utility::Vector<std::string> current_path_stack_ = {""};
+                std::unordered_set<std::string> visited_groups_;
 
-                while (!groups_stack.empty()) {
-                    H5::Group current_group = groups_stack.back();
-                    std::string current_path = current_path_stack.back();
-                    groups_stack.pop_back();
-                    current_path_stack.pop_back();
+                while (!groups_stack_.empty()) {
+                    H5::Group current_group_ = groups_stack_.back();
+                    std::string current_path_ = current_path_stack_.back();
+                    groups_stack_.pop_back();
+                    current_path_stack_.pop_back();
 
                     // Skip if already visited
-                    if (visited_groups.contains(current_path)) continue;
-                    visited_groups.insert(current_path);
+                    if (visited_groups_.contains(current_path_)) continue;
+                    visited_groups_.insert(current_path_);
 
                     // Process datasets and attributes in the current group
-                    hsize_t num_objs = current_group.getNumObjs();
-                    for (hsize_t i = 0; i < num_objs; ++i) {
-                        std::string obj_name = current_group.getObjnameByIdx(i);
-                        H5G_obj_t obj_type = current_group.getObjTypeByIdx(i);
+                    hsize_t num_objs_ = current_group_.getNumObjs();
+                    for (hsize_t i = 0; i < num_objs_; ++i) {
+                        std::string obj_name_ = current_group_.getObjnameByIdx(i);
+                        H5G_obj_t obj_type_ = current_group_.getObjTypeByIdx(i);
 
-                        switch (obj_type) {
+                        switch (obj_type_) {
                             case H5G_GROUP: {
-                                std::string new_path = current_path + "/" + obj_name;
-                                groups_stack.push_back(current_group.openGroup(obj_name));
-                                current_path_stack.push_back(new_path);
-                                this->groups.insert({ new_path, groups_stack.back()});
+                                std::string new_path_ = current_path_ + "/" + obj_name_;
+                                groups_stack_.push_back(current_group_.openGroup(obj_name_));
+                                current_path_stack_.push_back(new_path_);
+                                this->m_groups.insert({ new_path_, groups_stack_.back()});
                                 break;
                             }
                             case H5G_DATASET: {
-                                H5::DataSet dataset = current_group.openDataSet(obj_name);
-                                this->datasets.insert({ current_path + "/" + obj_name, dataset});
+                                H5::DataSet dataset_ = current_group_.openDataSet(obj_name_);
+                                this->m_datasets.insert({ current_path_ + "/" + obj_name_, dataset_});
 
                                 // Process dataset attributes
-                                hsize_t num_attrs = dataset.getNumAttrs();
-                                for (hsize_t j = 0; j < num_attrs; ++j) {
-                                    H5::Attribute attr = dataset.openAttribute(j);
-                                    this->attributes.insert({ current_path + "/" + obj_name + "/"+attr.getName(), attr});
+                                hsize_t num_attrs_ = dataset_.getNumAttrs();
+                                for (hsize_t j = 0; j < num_attrs_; ++j) {
+                                    H5::Attribute attr_ = dataset_.openAttribute(j);
+                                    this->m_attributes.insert({ current_path_ + "/" + obj_name_ + "/"+attr_.getName(), attr_});
                                 }
                                 break;
                             }
@@ -360,10 +734,10 @@ namespace lantern {
                     }
  
                     // Process group attributes
-                    hsize_t num_attrs = current_group.getNumAttrs();
-                    for (hsize_t j = 0; j < num_attrs; ++j) {
-                        H5::Attribute attr = current_group.openAttribute(j);
-                        this->attributes.insert({ current_path + "/" + attr.getName(), attr});
+                    hsize_t num_attrs_ = current_group_.getNumAttrs();
+                    for (hsize_t j = 0; j < num_attrs_; ++j) {
+                        H5::Attribute attr_ = current_group_.openAttribute(j);
+                        this->m_attributes.insert({ current_path_ + "/" + attr_.getName(), attr_});
                     }
                 }
             }
@@ -380,18 +754,20 @@ namespace lantern {
             void SetActiveGroup(const std::string& _target_group_name){
                 try{
 
-                    if(!this->groups.contains(_target_group_name)){
+                    H5::Exception::dontPrint();
+
+                    if(!this->m_groups.contains(_target_group_name)){
                         throw H5::GroupIException("SetActiveGroup","Selected group ["+_target_group_name+"] does not exists\n");
                     }
                     
-                    this->active_group = this->groups.at(_target_group_name);
+                    this->m_active_group = this->m_groups.at(_target_group_name);
 
-                }catch(H5::FileIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::GroupIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::FileIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::GroupIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -400,7 +776,7 @@ namespace lantern {
              * @return std::string
              */
             std::string GetActiveGroupNameAsString() {
-                return this->active_group.getObjName();
+                return this->m_active_group.getObjName();
             }
 
             /**
@@ -408,41 +784,43 @@ namespace lantern {
              */
             void GetAllData(){
                 try{
+
+                    H5::Exception::dontPrint();
                     
                     if(!this->CheckFileExists()){
-                        this->LoadFile(this->filename,H5F_ACC_RDWR);
+                        this->LoadFile(this->m_filename,H5F_ACC_RDWR);
                     }
 
                     // get root
-                    H5::Group root = this->file.openGroup("/");
-                    this->GetAllDataInfo(root);
-                    this->active_group = root;
-                    this->groups.insert({
+                    H5::Group root_ = this->m_file.openGroup("/");
+                    this->GetAllDataInfo(root_);
+                    this->m_active_group = root_;
+                    this->m_groups.insert({
                         "/",
-                        root
+                        root_
                     });
-                    root.close();
+                    root_.close();
 
-                }catch(H5::FileIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::FileIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
             
             LanternHDF5(){}
-            LanternHDF5(const H5std_string& _filename) : filename(_filename){}
+            LanternHDF5(const H5std_string& _filename) : m_filename(_filename){}
 
             ~LanternHDF5() {
-                for (auto& [_,dataspace] : this->dataspaces) {
+                for (auto& [_,dataspace] : this->m_dataspaces) {
                     dataspace.close();
                 }
-                for (auto& [_,dataset] : this->datasets) {
+                for (auto& [_,dataset] : this->m_datasets) {
                     dataset.close();
                 }
-                for (auto& [_,group] : this->groups) {
+                for (auto& [_,group] : this->m_groups) {
                     group.close();
                 }
-                this->file.close();
+                this->m_file.close();
             }
             
             /**
@@ -452,11 +830,11 @@ namespace lantern {
              */
             void LoadFile(std::string _filename,uint32_t AvailableAction){
                 try{
-                    this->file = H5::H5File(_filename,AvailableAction);
-                }catch(H5::FileIException& err){
-                    std::println("Error File, Cannot open [{}] maybe deleted or modified", _filename);
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                    H5::Exception::dontPrint();
+                    this->m_file = H5::H5File(_filename,AvailableAction);
+                }catch(H5::FileIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -466,19 +844,27 @@ namespace lantern {
              * @return lantern::utility::Vector<hsize_t>
              */
             lantern::utility::Vector<hsize_t> GetDatasetDims(const std::string& _dataset_name){
-                lantern::utility::Vector<hsize_t> data;
-                if(!this->datasets.contains(_dataset_name)){
-                    std::cout << "Dataset ["+_dataset_name+"] not found\n";
-                    data.clean();
-                    return data;   
+                try{
+                    H5::Exception::dontPrint();
+                    if(!this->m_datasets.contains(_dataset_name)){
+                        this->PrintError(std::string("Dataset [")+_dataset_name+"] not found\n");
+                        
+                    }
+                    lantern::utility::Vector<hsize_t> data_;
+                    H5::DataSet& dataset_ = this->m_datasets.at(_dataset_name);
+                    H5::DataSpace dataspace_ = dataset_.getSpace();
+                    uint32_t rank_ = dataspace_.getSimpleExtentNdims();
+                    data_ = lantern::utility::Vector<hsize_t>(rank_);
+                    data_.explicitTotalItem(rank_);
+                    dataspace_.getSimpleExtentDims(data_.data());
+                    return data_;
+                }catch(H5::DataSpaceIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::AttributeIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
-                H5::DataSet& dataset = this->datasets.at(_dataset_name);
-                H5::DataSpace dataspace = dataset.getSpace();
-                uint32_t rank = dataspace.getSimpleExtentNdims();
-                data = lantern::utility::Vector<hsize_t>(rank);
-                dataspace.getSimpleExtentDims(data.getData());
-                data.explicitTotalItem(rank);
-                return data;
             }
 
             /**
@@ -488,20 +874,29 @@ namespace lantern {
              * @return lantern::utility::Vector<hsize_t>
              */
             lantern::utility::Vector<hsize_t> GetAttrDimsAtGroup(const std::string& _group_name,const std::string& _attr_name){
-                lantern::utility::Vector<hsize_t> data;
-                std::string attr_name_ = _group_name + "/" + _attr_name;
-                if(!this->attributes.contains(attr_name_)) {
-                    std::cout << "Attr [" + attr_name_ + "] not found\n";
-                    data.clean();
-                    return data;
+                try{
+                    H5::Exception::dontPrint();
+                    lantern::utility::Vector<hsize_t> data_;
+                    std::string attr_name_ = _group_name + "/" + _attr_name;
+                    if(!this->m_attributes.contains(attr_name_)) {
+                        this->PrintError(std::string("Attributes [")+_attr_name+"] not found\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    H5::Attribute& attribute_ = this->m_attributes.at(attr_name_);
+                    H5::DataSpace dataspace_ = attribute_.getSpace();
+                    uint32_t rank_ = dataspace_.getSimpleExtentNdims();
+                    data_ = lantern::utility::Vector<hsize_t>(rank_);
+                    data_.explicitTotalItem(rank_);
+                    dataspace_.getSimpleExtentDims(data_.data());
+                    return data_;
+
+                }catch(H5::DataSpaceIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::AttributeIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
-                H5::Attribute& attribute = this->attributes.at(attr_name_);
-                H5::DataSpace dataspace = attribute.getSpace();
-                uint32_t rank = dataspace.getSimpleExtentNdims();
-                data = lantern::utility::Vector<hsize_t>(rank);
-                dataspace.getSimpleExtentDims(data.getData());
-                data.explicitTotalItem(rank);
-                return data;
             }
 
             /**
@@ -511,20 +906,29 @@ namespace lantern {
              * @return lantern::utility::Vector<hsize_t>
              */
             lantern::utility::Vector<hsize_t> GetAttrDimsAtDataset(const std::string& _dataset_name,const std::string& _attr_name) {
-                lantern::utility::Vector<hsize_t> data;
-                std::string attr_name_ = _dataset_name + "/" + _attr_name;
-                if (!this->attributes.contains(attr_name_)) {
-                    std::cout << "Attr [" + attr_name_ + "] not found\n";
-                    data.clean();
-                    return data;
+                try{
+                    H5::Exception::dontPrint();
+                    lantern::utility::Vector<hsize_t> data_;
+                    std::string attr_name_ = _dataset_name + "/" + _attr_name;
+                    if(!this->m_attributes.contains(attr_name_)) {
+                        this->PrintError(std::string("Attributes [")+_attr_name+"] not found\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    H5::Attribute& attribute_ = this->m_attributes.at(attr_name_);
+                    H5::DataSpace dataspace_ = attribute_.getSpace();
+                    uint32_t rank_ = dataspace_.getSimpleExtentNdims();
+                    data_ = lantern::utility::Vector<hsize_t>(rank_);
+                    data_.explicitTotalItem(rank_);
+                    dataspace_.getSimpleExtentDims(data_.data());
+                    return data_;
+                }catch(H5::DataSpaceIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::AttributeIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
-                H5::Attribute& attribute = this->attributes.at(attr_name_);
-                H5::DataSpace dataspace = attribute.getSpace();
-                uint32_t rank = dataspace.getSimpleExtentNdims();
-                data = lantern::utility::Vector<hsize_t>(rank);
-                dataspace.getSimpleExtentDims(data.getData());
-                data.explicitTotalItem(rank);
-                return data;
+                
             }
 
             /**
@@ -532,13 +936,13 @@ namespace lantern {
              * @param _dataset_name
              */
             void PrintDatasetDims(const std::string& _dataset_name){
-                lantern::utility::Vector<hsize_t> dims = this->GetDatasetDims(_dataset_name);
+                lantern::utility::Vector<hsize_t> dims_ = this->GetDatasetDims(_dataset_name);
                 std::cout << std::string(30,'=') << '\n';
                 std::cout << "Dataset name : " << _dataset_name << '\n';
-                std::cout << "Rank : " << dims.size() << '\n';
+                std::cout << "Rank : " << dims_.size() << '\n';
                 std::cout << "Dimension : [ ";
-                for(auto& p : dims){
-                    std::cout << p << ' '; 
+                for(auto& p_ : dims_){
+                    std::cout << p_ << ' '; 
                 }
                 std::cout << "]\n";
                 std::cout << std::string(30,'=') << '\n';
@@ -549,7 +953,7 @@ namespace lantern {
              * @return H5::H5File&
              */
             H5::H5File& GetFile(){
-                return this->file;
+                return this->m_file;
             }
 
             /**
@@ -557,11 +961,11 @@ namespace lantern {
              */
             void PrintAllDatasets(){
                 std::cout << std::string(30,'=') << '\n';
-                std::cout << "All Datasets in file : " << this->filename << '\n'; 
+                std::cout << "All Datasets in file : " << this->m_filename << '\n'; 
                 std::cout << std::string(30,'-') << '\n';
                 uint32_t i = 0;
-                for (auto [name, dataset] : this->datasets) {
-                    std::cout << std::to_string(i) << ". " << name << '\n';
+                for (auto [name_, dataset_] : this->m_datasets) {
+                    std::cout << std::to_string(i) << ". " << name_ << '\n';
                     i++;
                 }
                 std::cout << std::string(30,'=') << '\n';
@@ -572,11 +976,11 @@ namespace lantern {
              */
             void PrintAllAttributes(){
                 std::cout << std::string(30,'=') << '\n';
-                std::cout << "All Attributes in file : " << this->filename << '\n'; 
+                std::cout << "All Attributes in file : " << this->m_filename << '\n'; 
                 std::cout << std::string(30,'-') << '\n';
                 uint32_t i = 0;
-                for (auto [name, dataset] : this->attributes) {
-                    std::cout << std::to_string(i) << ". " << name << '\n';
+                for (auto [name_, dataset_] : this->m_attributes) {
+                    std::cout << std::to_string(i) << ". " << name_ << '\n';
                     i++;
                 }
                 std::cout << std::string(30,'=') << '\n';
@@ -587,11 +991,11 @@ namespace lantern {
              */
             void PrintAllGroups(){
                 std::cout << std::string(30,'=') << '\n';
-                std::cout << "All Groups in file : " << this->filename << '\n'; 
+                std::cout << "All Groups in file : " << this->m_filename << '\n'; 
                 std::cout << std::string(30,'-') << '\n';
                 uint32_t i = 0;
-                for (auto [name, dataset] : this->groups) {
-                    std::cout << std::to_string(i) << ". " << dataset.getObjName() << '\n';
+                for (auto [name_, dataset_] : this->m_groups) {
+                    std::cout << std::to_string(i) << ". " << dataset_.getObjName() << '\n';
                     i++;
                 }
                 std::cout << std::string(30,'=') << '\n';
@@ -603,14 +1007,15 @@ namespace lantern {
              */
             H5::Group* GetGroupPtr(const std::string& _group_name) {
                 try {
-                    if (this->groups.contains(_group_name)) {
+                    H5::Exception::dontPrint();
+                    if (this->m_groups.contains(_group_name)) {
                         throw std::runtime_error(std::format("Cannot get group, the group {} does not exists in file", _group_name));
                     }
-                    return &this->groups.at(_group_name);
+                    return &this->m_groups.at(_group_name);
                 }
-                catch (std::exception& err) {
-                    std::println("Lantern Error, {}", err.what());
-                    exit(EXIT_FAILURE);
+                catch (std::exception& _err) {
+                    this->PrintError(_err.what());
+                    
                 }
             }
 
@@ -619,7 +1024,7 @@ namespace lantern {
              * @return std::unordered_map<std::string,H5::Group>
              */
             auto* GetGroupsPtr() {
-                return &this->groups;
+                return &this->m_groups;
             }
 
             /**
@@ -627,7 +1032,7 @@ namespace lantern {
             * @return  std::unordered_map<std::string,H5::Dataset>
             */
             auto* GetDatasetsPtr() {
-                return &this->datasets;
+                return &this->m_datasets;
             }
 
             /**
@@ -636,10 +1041,10 @@ namespace lantern {
             void Create(){
                 try{
                     H5::Exception::dontPrint();
-                    this->LoadFile(this->filename,H5F_ACC_TRUNC);
-                }catch(H5::FileIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                    this->LoadFile(this->m_filename,H5F_ACC_TRUNC);
+                }catch(H5::FileIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -648,7 +1053,7 @@ namespace lantern {
              * @return std::unordered_map<std::string, H5::DataSpace>&
              */
             auto& GetDataSpaces(){
-                return this->dataspaces;
+                return this->m_dataspaces;
             }
 
             /**
@@ -660,33 +1065,33 @@ namespace lantern {
             template <uint32_t RANK>
             void CreateDataSpace(const std::string& _dataspace_name,std::initializer_list<uint64_t> _dims){
                 
-                uint64_t* dims = (uint64_t*)::operator new(sizeof(uint64_t) * _dims.size());
-                uint32_t index = 0;
-                for(auto item: _dims){
-                    new(&dims[index++]) uint64_t(std::move(item));
+                uint64_t* dims_ = (uint64_t*)::operator new(sizeof(uint64_t) * _dims.size());
+                uint32_t index_ = 0;
+                for(auto item_: _dims){
+                    new(&dims_[index_++]) uint64_t(std::move(item_));
                 }
                 
                 try{
                     H5::Exception::dontPrint();
                     
                     if(this->CheckFileExists()){
-                        if(!this->dataspaces.contains(_dataspace_name)){
-                            this->dataspaces.insert({
+                        if(!this->m_dataspaces.contains(_dataspace_name)){
+                            this->m_dataspaces.insert({
                                 _dataspace_name,
-                                H5::DataSpace(RANK,dims)
+                                H5::DataSpace(RANK,dims_)
                             });
-                            delete dims;
+                            delete dims_;
                         }else{
-                            delete dims;
+                            delete dims_;
                             throw H5::DataSpaceIException("DataSpace", "DataSpace ["+_dataspace_name+"] already exists");
                         }
                     }else{
-                        delete dims;
+                        delete dims_;
                         throw H5::DataSpaceIException("File", "File does not exists");
                     }
-                }catch(H5::DataSpaceIException& err){
-                    std::cout << err.getCDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::DataSpaceIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -698,33 +1103,33 @@ namespace lantern {
              */
             void CreateDataSpace(const std::string& _dataspace_name, const uint32_t& RANK,std::initializer_list<uint64_t> _dims){
                 
-                uint64_t* dims = (uint64_t*)::operator new(sizeof(uint64_t) * _dims.size());
+                uint64_t* dims_ = (uint64_t*)::operator new(sizeof(uint64_t) * _dims.size());
                 uint32_t index = 0;
                 for(auto item: _dims){
-                    new(&dims[index++]) uint64_t(std::move(item));
+                    new(&dims_[index++]) uint64_t(std::move(item));
                 }
                 
                 try{
                     H5::Exception::dontPrint();
                     
                     if(this->CheckFileExists()){
-                        if(!this->dataspaces.contains(_dataspace_name)){
-                            this->dataspaces.insert({
+                        if(!this->m_dataspaces.contains(_dataspace_name)){
+                            this->m_dataspaces.insert({
                                 _dataspace_name,
-                                H5::DataSpace(RANK,dims)
+                                H5::DataSpace(RANK,dims_)
                             });
-                            delete dims;
+                            delete dims_;
                         }else{
-                            delete dims;
+                            delete dims_;
                             throw H5::DataSpaceIException("DataSpace", "DataSpace ["+_dataspace_name+"] already exists");
                         }
                     }else{
-                        delete dims;
+                        delete dims_;
                         throw H5::DataSpaceIException("File", "File does not exists");
                     }
-                }catch(H5::DataSpaceIException& err){
-                    std::cout << err.getCDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::DataSpaceIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -738,8 +1143,8 @@ namespace lantern {
                     H5::Exception::dontPrint();
                     
                     if(this->CheckFileExists()){
-                        if(!this->dataspaces.contains(_dataspace_name)){
-                            this->dataspaces.insert({
+                        if(!this->m_dataspaces.contains(_dataspace_name)){
+                            this->m_dataspaces.insert({
                                 _dataspace_name,
                                 H5::DataSpace(H5S_SCALAR)
                             });
@@ -749,9 +1154,9 @@ namespace lantern {
                     }else{
                         throw H5::DataSpaceIException("File", "File does not exists");
                     }
-                }catch(H5::DataSpaceIException& err){
-                    std::cout << err.getCDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::DataSpaceIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -761,42 +1166,40 @@ namespace lantern {
              * @param _dataspace_name
              * @param TypeData
              */
-            void CreateDataset(const std::string& _dataset_name, const std::string& _dataspace_name, const H5::PredType& TypeData){
+            void CreateDataset(const std::string& _dataset_name, const std::string& _dataspace_name, const H5::PredType& _TypeData){
                 try{
                     H5::Exception::dontPrint();
                     if(this->CheckFileExists()){
 
-                        std::string dataset_name_ = this->active_group.getObjName() + "/" + _dataset_name;
+                        std::string dataset_name_ = this->m_active_group.getObjName() + "/" + _dataset_name;
 
-                        if(this->datasets.contains(dataset_name_)){
+                        if(this->m_datasets.contains(dataset_name_)){
                             throw H5::DataSetIException("Dataset","Dataset ["+dataset_name_+"] already exists");
                         }
 
-                        if(!this->dataspaces.contains(_dataspace_name)){
+                        if(!this->m_dataspaces.contains(_dataspace_name)){
                             throw H5::DataSetIException("Dataset","Dataspace ["+_dataspace_name+"] does not exists");
                         }
 
-                        this->datasets.insert({
+                        this->m_datasets.insert({
                             dataset_name_,
-                            this->active_group.createDataSet(
+                            this->m_active_group.createDataSet(
                                 _dataset_name, 
-                                TypeData, 
-                                this->dataspaces.at(_dataspace_name)
+                                _TypeData, 
+                                this->m_dataspaces.at(_dataspace_name)
                             )
                         });
 
                     }else{
                         throw H5::DataSetIException("Dataset","File does not valid");
                     }
-                }catch(H5::DataSetIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::DataSetIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
-                catch (H5::GroupIException& err) {
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::GroupIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -806,44 +1209,42 @@ namespace lantern {
              * @param _dataspace_name
              * @param TypeData
              */
-            void CreateDataset(const std::string& _dataset_name, const std::string& _dataspace_name, const H5::StrType& TypeData) {
+            void CreateDataset(const std::string& _dataset_name, const std::string& _dataspace_name, const H5::StrType& _TypeData) {
                 try {
                     H5::Exception::dontPrint();
                     if (this->CheckFileExists()) {
 
-                        std::string dataset_name_ = this->active_group.getObjName() + "/" + _dataset_name;
+                        std::string dataset_name_ = this->m_active_group.getObjName() + "/" + _dataset_name;
 
-                        if (this->datasets.contains(dataset_name_)) {
+                        if (this->m_datasets.contains(dataset_name_)) {
                             throw H5::DataSetIException("Dataset", "Dataset [" + dataset_name_ + "] already exists");
                         }
 
-                        if (!this->dataspaces.contains(_dataspace_name)) {
+                        if (!this->m_dataspaces.contains(_dataspace_name)) {
                             throw H5::DataSetIException("Dataset", "Dataspace [" + _dataspace_name + "] does not exists");
                         }
 
-                        this->datasets.insert({
+                        this->m_datasets.insert({
                             dataset_name_,
-                            this->active_group.createDataSet(
+                            this->m_active_group.createDataSet(
                                 _dataset_name,
-                                TypeData,
-                                this->dataspaces.at(_dataspace_name)
+                                _TypeData,
+                                this->m_dataspaces.at(_dataspace_name)
                             )
-                            });
+                        });
 
                     }
                     else {
                         throw H5::DataSetIException("Dataset", "File does not valid");
                     }
                 }
-                catch (H5::DataSetIException& err) {
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::DataSetIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
-                catch (H5::GroupIException& err) {
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::GroupIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -854,24 +1255,24 @@ namespace lantern {
              * @param TypeData
              */
             template <typename Data>
-            void WriteDataset(const std::string& _dataset_name, Data* data,  const H5::DataType& TypeData){
+            void WriteDataset(const std::string& _dataset_name, Data* _data,  const H5::DataType& _TypeData){
                 try{
                     
-                    std::string dataset_name_ = this->active_group.getObjName() + "/" + _dataset_name;
+                    std::string dataset_name_ = this->m_active_group.getObjName() + "/" + _dataset_name;
                     H5::Exception::dontPrint();
-                    if(!this->datasets.contains(dataset_name_)){
+                    if(!this->m_datasets.contains(dataset_name_)){
                         throw H5::DataSetIException("WriteDataset","Cannot find dataset ["+dataset_name_+"]\n");
                     }
 
-                    H5::DataSet dataset_ = this->datasets.at(dataset_name_);
-                    dataset_.write(data, TypeData);                        
+                    H5::DataSet dataset_ = this->m_datasets.at(dataset_name_);
+                    dataset_.write(_data, _TypeData);                        
 
-                }catch(H5::DataSetIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::FileIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::DataSetIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::FileIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -881,26 +1282,26 @@ namespace lantern {
              * @param data
              * @param TypeData
              */
-            void WriteDataset(const std::string& _dataset_name,const std::string& data, const H5::StrType& TypeData) {
+            void WriteDataset(const std::string& _dataset_name,const std::string& _data, const H5::StrType& _TypeData) {
                 try {
 
-                    std::string dataset_name_ = this->active_group.getObjName() + "/" + _dataset_name;
+                    std::string dataset_name_ = this->m_active_group.getObjName() + "/" + _dataset_name;
                     H5::Exception::dontPrint();
-                    if (!this->datasets.contains(dataset_name_)) {
+                    if (!this->m_datasets.contains(dataset_name_)) {
                         throw H5::DataSetIException("WriteDataset", "Cannot find dataset [" + dataset_name_ + "]\n");
                     }
 
-                    H5::DataSet dataset_ = this->datasets.at(dataset_name_);
-                    dataset_.write(data, TypeData);
+                    H5::DataSet dataset_ = this->m_datasets.at(dataset_name_);
+                    dataset_.write(_data, _TypeData);
 
                 }
-                catch (H5::DataSetIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::DataSetIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
-                catch (H5::FileIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::FileIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -911,7 +1312,7 @@ namespace lantern {
              */
             bool CheckDataSetExists(const std::string& _dataset_name){
 
-                return this->datasets.contains(_dataset_name);
+                return this->m_datasets.contains(_dataset_name);
 
             }
 
@@ -922,7 +1323,7 @@ namespace lantern {
              */
             bool CheckAttributeExists(const std::string& _attr_name) {
 
-                return this->attributes.contains(_attr_name);
+                return this->m_attributes.contains(_attr_name);
 
             }
 
@@ -931,7 +1332,7 @@ namespace lantern {
              * @return bool
              */
             bool CheckFileExists(){
-                return this->file.isValid(this->file.getId());
+                return this->m_file.isValid(this->m_file.getId());
             }
 
             /**
@@ -952,41 +1353,38 @@ namespace lantern {
                 try{
                     
                     H5::Exception::dontPrint();
-                    std::string dataset_name_ = this->active_group.getObjName() + "/" + _dataset_name;
+                    std::string dataset_name_ = this->m_active_group.getObjName() + "/" + _dataset_name;
                     std::string attr_name_ = dataset_name_ + "/" + _attr_name;
                     
-                    if(this->attributes.contains(attr_name_)){
+                    if(this->m_attributes.contains(attr_name_)){
                         throw H5::AttributeIException("CreateAttribute","Attribute ["+attr_name_+"] already exists\n");
                     }
                     
-                    if(!this->datasets.contains(dataset_name_)){
+                    if(!this->m_datasets.contains(dataset_name_)){
                         throw H5::AttributeIException("CreateAttribute","Cannot find dataset ["+dataset_name_+"]\n");
                     }
 
-                    if(!this->dataspaces.contains(_dataspace_name)){
+                    if(!this->m_dataspaces.contains(_dataspace_name)){
                         throw H5::AttributeIException("CreateAttribute","Cannot find dataspace ["+_dataspace_name+"]\n");
                     }
 
-                    H5::DataSet dataset_ = this->datasets.at(dataset_name_);
-                    H5::DataSpace dataspace_ = this->dataspaces.at(_dataspace_name);
+                    H5::DataSet dataset_ = this->m_datasets.at(dataset_name_);
+                    H5::DataSpace dataspace_ = this->m_dataspaces.at(_dataspace_name);
                     
-                    this->attributes.insert({
+                    this->m_attributes.insert({
                         attr_name_,
                         dataset_.createAttribute(_attr_name,_datatype,dataspace_)
                     });
 
-                }catch(H5::AttributeIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::DataSpaceIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch (H5::DataSetIException& err) {
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::AttributeIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::DataSpaceIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch (H5::DataSetIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -1010,40 +1408,35 @@ namespace lantern {
                     H5::Exception::dontPrint();
                     std::string attr_name_ = _group_name + "/" + _attr_name;
                     
-                    if(this->attributes.contains(attr_name_)){
+                    if(this->m_attributes.contains(attr_name_)){
                         throw H5::AttributeIException("CreateAttribute","Attribute ["+attr_name_+"] already exists\n");
                     }
 
-                    if(!this->groups.contains(_group_name)){
+                    if(!this->m_groups.contains(_group_name)){
                         throw H5::AttributeIException("CreateAttribute","Group ["+_group_name+"] does not exists\n");
                     }
 
-                    if(!this->dataspaces.contains(_dataspace_name)){
+                    if(!this->m_dataspaces.contains(_dataspace_name)){
                         throw H5::AttributeIException("CreateAttribute","Cannot find dataspace ["+_dataspace_name+"]\n");
                     }
 
-                    H5::Group group_ = this->groups.at(_group_name);
-                    H5::DataSpace dataspace_ = this->dataspaces.at(_dataspace_name);
+                    H5::Group group_ = this->m_groups.at(_group_name);
+                    H5::DataSpace dataspace_ = this->m_dataspaces.at(_dataspace_name);
                     
-                    this->attributes.insert({
+                    this->m_attributes.insert({
                         attr_name_,
                         group_.createAttribute(_attr_name,_datatype,dataspace_)
                     });
 
-                    group_.close();
-
-                }catch(H5::AttributeIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::DataSpaceIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch (H5::DataSetIException& err) {
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::AttributeIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::DataSpaceIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch (H5::DataSetIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -1066,19 +1459,19 @@ namespace lantern {
                 try{
                     
                     H5::Exception::dontPrint();
-                    std::string dataset_name_ = this->active_group.getObjName() + "/" + _dataset_name;
+                    std::string dataset_name_ = this->m_active_group.getObjName() + "/" + _dataset_name;
                     std::string attr_name_ = dataset_name_ + "/" + _attr_name;
 
-                    if(!this->attributes.contains(attr_name_)){
+                    if(!this->m_attributes.contains(attr_name_)){
                         throw H5::AttributeIException("CreateAttribute","Attribute ["+attr_name_+"] does not exists\n");
                     }
 
-                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    H5::Attribute attr_ = this->m_attributes.at(attr_name_);
                     attr_.write(_datatype, _data);
 
-                }catch(H5::AttributeIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::AttributeIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -1103,16 +1496,16 @@ namespace lantern {
                     H5::Exception::dontPrint();
                     std::string attr_name_ = _group_name + "/" + _attr_name;
 
-                    if(!this->attributes.contains(attr_name_)){
+                    if(!this->m_attributes.contains(attr_name_)){
                         throw H5::AttributeIException("CreateAttribute","Attribute ["+attr_name_+"] does not exists\n");
                     }
 
-                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    H5::Attribute attr_ = this->m_attributes.at(attr_name_);
                     attr_.write(_datatype, _data);
 
-                }catch(H5::AttributeIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::AttributeIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -1136,16 +1529,16 @@ namespace lantern {
                     H5::Exception::dontPrint();
                     std::string attr_name_ = _dataset_name + "/" + _attr_name;
 
-                    if(!this->attributes.contains(attr_name_)){
+                    if(!this->m_attributes.contains(attr_name_)){
                         throw H5::DataSetIException("ReadAttribute","Attribute ["+attr_name_+"] does not exists\n");
                     }
                     
-                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    H5::Attribute attr_ = this->m_attributes.at(attr_name_);
                     attr_.read(_datatype, _data);
 
-                }catch(H5::DataSetIException& err){
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::DataSetIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -1170,17 +1563,17 @@ namespace lantern {
                     H5::Exception::dontPrint();
                     std::string attr_name_ = _dataset_name + "/" + _attr_name;
 
-                    if (!this->attributes.contains(attr_name_)) {
+                    if (!this->m_attributes.contains(attr_name_)) {
                         throw H5::DataSetIException("ReadAttribute", "Attribute [" + attr_name_ + "] does not exists\n");
                     }
 
-                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    H5::Attribute attr_ = this->m_attributes.at(attr_name_);
                     attr_.read(_datatype, _data);
 
                 }
-                catch (H5::DataSetIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::DataSetIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -1202,17 +1595,17 @@ namespace lantern {
                     H5::Exception::dontPrint();
                     std::string attr_name_ = _group_name + "/" + _attr_name;
 
-                    if (!this->attributes.contains(attr_name_)) {
+                    if (!this->m_attributes.contains(attr_name_)) {
                         throw H5::DataSetIException("ReadAttribute", "Attribute [" + attr_name_ + "] does not exists\n");
                     }
 
-                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    H5::Attribute attr_ = this->m_attributes.at(attr_name_);
                     attr_.read(_datatype,_data);
 
                 }
-                catch (H5::AttributeIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::AttributeIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                   
                 }
             }
 
@@ -1237,17 +1630,17 @@ namespace lantern {
                     H5::Exception::dontPrint();
                     std::string attr_name_ = _group_name + "/" + _attr_name;
 
-                    if (!this->attributes.contains(attr_name_)) {
+                    if (!this->m_attributes.contains(attr_name_)) {
                         throw H5::DataSetIException("ReadAttribute", "Attribute [" + attr_name_ + "] does not exists\n");
                     }
 
-                    H5::Attribute attr_ = this->attributes.at(attr_name_);
+                    H5::Attribute attr_ = this->m_attributes.at(attr_name_);
                     attr_.read(_datatype, _data);
 
                 }
-                catch (H5::AttributeIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::AttributeIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
             
@@ -1263,21 +1656,21 @@ namespace lantern {
                 try {
 
                     H5::Exception::dontPrint();
-                    if (!this->datasets.contains(_dataset_name)) {
+                    if (!this->m_datasets.contains(_dataset_name)) {
                         throw H5::DataSetIException("ReadDataset", "Cannot find dataset [" + _dataset_name + "]\n");
                     }
 
-                    H5::DataSet dataset_ = this->datasets.at(_dataset_name);
+                    H5::DataSet dataset_ = this->m_datasets.at(_dataset_name);
                     dataset_.read(data, TypeData);
 
                 }
-                catch (H5::DataSetIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::DataSetIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
-                catch (H5::FileIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::FileIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -1291,21 +1684,21 @@ namespace lantern {
                 try {
 
                     H5::Exception::dontPrint();
-                    if (!this->datasets.contains(_dataset_name)) {
+                    if (!this->m_datasets.contains(_dataset_name)) {
                         throw H5::DataSetIException("ReadDataset", "Cannot find dataset [" + _dataset_name + "]\n");
                     }
 
-                    H5::DataSet dataset_ = this->datasets.at(_dataset_name);
+                    H5::DataSet dataset_ = this->m_datasets.at(_dataset_name);
                     dataset_.read(data, TypeData);
 
                 }
-                catch (H5::DataSetIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::DataSetIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
-                catch (H5::FileIException& err) {
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                catch (H5::FileIException& _err) {
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
             }
 
@@ -1316,7 +1709,7 @@ namespace lantern {
              */
             bool CheckGroupExists(const std::string& _group_name) {
                
-                if (!this->groups.contains(_group_name)) {
+                if (!this->m_groups.contains(_group_name)) {
                     return false;
                 }
 
@@ -1334,24 +1727,22 @@ namespace lantern {
 
                     H5::Exception::dontPrint();
 
-                    if(this->groups.contains(_group_name)){
+                    if(this->m_groups.contains(_group_name)){
                         throw H5::GroupIException("CreateGroup","Group ["+_group_name+"] already exists\n");
                     }
 
-                    H5::Group group_ = this->active_group.createGroup(_group_name);
-                    this->groups.insert({
+                    H5::Group group_ = this->m_active_group.createGroup(_group_name);
+                    this->m_groups.insert({
                         _group_name,
                         group_
                     });
 
-                }catch(H5::FileIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::GroupIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::FileIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::GroupIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
 
             }
@@ -1367,28 +1758,26 @@ namespace lantern {
 
                     H5::Exception::dontPrint();
 
-                    if(!this->groups.contains(_target_group_name)){
+                    if(!this->m_groups.contains(_target_group_name)){
                         throw H5::GroupIException("CreateGroup","Target group ["+_group_name+"] does not exists\n");
                     }
-                    if(this->groups.contains(_group_name)){
+                    if(this->m_groups.contains(_group_name)){
                         throw H5::GroupIException("CreateGroup","Group ["+_group_name+"] already exists\n");
                     }
 
-                    H5::Group group_ = this->groups.at(_target_group_name);
+                    H5::Group group_ = this->m_groups.at(_target_group_name);
                     H5::Group new_group_ = group_.createGroup(_group_name);
-                    this->groups.insert({
+                    this->m_groups.insert({
                         _group_name,
                         group_
                     });
 
-                }catch(H5::FileIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
-                }catch(H5::GroupIException& err){
-                    err.printErrorStack();
-                    std::cout << err.getDetailMsg() << '\n';
-                    exit(EXIT_FAILURE);
+                }catch(H5::FileIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
+                }catch(H5::GroupIException& _err){
+                    this->PrintError(_err.getDetailMsg());
+                    
                 }
 
             }

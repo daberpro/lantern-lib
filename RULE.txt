@@ -1,0 +1,11 @@
+Pleasee read this first
+i have write this library for months, and i get confused when my code get more and more complex
+so i just want to create a simpel system writing rule, to make my code readable and have consisten 
+look, and if you also want to contribute into my project please follow the rule below.
+
+1. Using _{params name} to declare parameters
+2. Using {identifier name}_ to declare an identifier
+3. Using {identifier name} to declare identifier for looping
+4. Using m_{identifier name} to decalare member class identifier
+5. Always use lantern namespace first then sub namespace
+6. Lantern is header only so never use .cpp for any declaration

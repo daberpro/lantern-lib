@@ -18,16 +18,16 @@ namespace lantern {
          * @ingroup LantermFFNRegularize
          */
         inline af::array L2Regularization(
-            const double& lambda, 
-            const double& batch_size,
-            const af::array& weights
+            const double& _lambda, 
+            const double& _batch_size,
+            const af::array& _weights
         ){
 
             /**
              * actual function
              * (lambda/ (2* batch_size)) * weights ^ 2
              */
-            return (lambda/batch_size) * weights;
+            return (_lambda/_batch_size) * _weights;
 
         }
 
@@ -40,9 +40,9 @@ namespace lantern {
          * @ingroup LantermFFNRegularize
          */
         inline af::array L1Regularization(
-            const double& lambda, 
-            const double& batch_size,
-            const af::array& weights
+            const double& _lambda, 
+            const double& _batch_size,
+            const af::array& _weights
         ){
 
             /**
@@ -52,7 +52,7 @@ namespace lantern {
              * and if x > 0 the output will be x 
              * and if x = 0 the output will be 0, or sign(x)
              */
-            return (lambda/batch_size) * af::sign(weights);
+            return (_lambda/_batch_size) * af::sign(_weights);
 
         }
 

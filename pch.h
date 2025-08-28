@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
+#include <string>
 #include <string_view>
 #include <arrayfire.h>
 #include <iterator>
@@ -31,3 +32,4 @@
 #include <mutex>
 #include <sstream>
 #include <nlohmann/json.hpp>
+#include <span>

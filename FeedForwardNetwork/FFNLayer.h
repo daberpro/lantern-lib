@@ -34,26 +34,30 @@ namespace lantern {
             class Layer : public BaseLayer{
             private:
                 
-                nlohmann::json meta_data = {
+                nlohmann::json m_meta_data = {
                     {"name", "FFN"},
                     {"layer_size", nlohmann::json::array()},
                     {"node_type_of_layer", nlohmann::json::array()}
                 };
                 lantern::utility::Vector<lantern::ffn::node::NodeType> m_NodeTypeOfLayer;
+
+                lantern::utility::Vector<af::array> m_parameters;
+                lantern::utility::Vector<af::array> m_prev_gradient;
+                lantern::utility::Vector<af::array> m_outputs;
     
             public:
     
                 Layer(){}
                 Layer(Layer&& _prev_layer) noexcept {
-                    this->m_LayersSize.copyPtrData(*_prev_layer.GetAllLayerSizes());
-                    this->m_NodeTypeOfLayer.copyPtrData(*_prev_layer.GetAllNodeTypeOfLayer());
+                    this->m_LayersSize = (*_prev_layer.GetAllLayerSizes());
+                    this->m_NodeTypeOfLayer = (*_prev_layer.GetAllNodeTypeOfLayer());
                 }
 
                 /**
                  * @brief Generate meta data to save model
                  */
                 void GenerateMetaData() {
-                    this->meta_data["layer_size"] = this->m_LayersSize;
+                    this->m_meta_data["layer_size"] = this->m_LayersSize;
                 }
 
                 /**
@@ -61,7 +65,7 @@ namespace lantern {
                  * @return std::string
                  */
                 std::string GetMetaDataAsString() {
-                    return this->meta_data.dump(1);
+                    return this->m_meta_data.dump(1);
                 }
     
                 /**
@@ -73,11 +77,23 @@ namespace lantern {
                     lantern::ffn::node::NodeType nodeTypeOfLayer = lantern::ffn::node::NodeType::NOTHING
                 >
                 void Add(uint32_t _total_node){
-                    this->meta_data["node_type_of_layer"].push_back(
+                    this->m_meta_data["node_type_of_layer"].push_back(
                         lantern::ffn::node::GetNodeTypeAsString(nodeTypeOfLayer)
                     );
                     this->m_LayersSize.push_back(_total_node);
                     this->m_NodeTypeOfLayer.push_back(nodeTypeOfLayer);
+                }
+
+                lantern::utility::Vector<af::array>* GetPrevradient() {
+                    return &this->m_prev_gradient;
+                }
+
+                lantern::utility::Vector<af::array>* GetOutputs() {
+                    return &this->m_outputs;
+                }
+
+                lantern::utility::Vector<af::array>* GetParameters() {
+                    return &this->m_parameters;
                 }
     
                 /**
@@ -101,33 +117,33 @@ namespace lantern {
                  * @brief Print all info about layer
                  */
                 void PrintLayerInfo() {
-                    uint32_t convolve_index = 0;
-                    uint32_t pooling_index = 0;
-                    uint32_t index = 0;
+                    uint32_t convolve_index_ = 0;
+                    uint32_t pooling_index_ = 0;
+                    uint32_t index_ = 0;
 
                     for (const uint32_t& layer_size_ : m_LayersSize) {
-                        lantern::utility::Vector<std::string> lines;
+                        lantern::utility::Vector<std::string> lines_;
 
                         // Add layer information
-                        lines.push_back(std::format(" Layer : {}", index));
-                        lines.push_back(std::format(" Type : {}", lantern::ffn::node::GetNodeTypeAsString(this->m_NodeTypeOfLayer[index])));
-                        lines.push_back(std::format(" Total Node : {}", layer_size_));
+                        lines_.push_back(std::format(" Layer : {}", index_));
+                        lines_.push_back(std::format(" Type : {}", lantern::ffn::node::GetNodeTypeAsString(this->m_NodeTypeOfLayer[index_])));
+                        lines_.push_back(std::format(" Total Node : {}", layer_size_));
 
                         // Add convolution info if applicable
 
                         std::println("+{:-^{}}+", "", 70);
-                        for (const auto& line : lines){
-                            std::println("|{:<{}}|", line, 70);
+                        for (const auto& line_ : lines_){
+                            std::println("|{:<{}}|", line_, 70);
                         }
                         std::println("+{:-^{}}+", "", 70);
 
-                        index++;
+                        index_++;
                     }
                 }
     
                 ~Layer() {
-                    this->m_NodeTypeOfLayer.clean();
-                    this->m_LayersSize.clean();
+                    this->m_NodeTypeOfLayer.clear();
+                    this->m_LayersSize.clear();
                 }
     
             };

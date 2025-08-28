@@ -21,8 +21,8 @@ namespace lantern{
          * @ingroup LanternFunction
          */
         template <typename T>
-        inline T max(const T& a, const T& b){
-            return (a < b? b : a);
+        inline T max(const T& _a, const T& _b){
+            return (_a < _b? _b : _a);
         }
 
     }
@@ -35,60 +35,60 @@ namespace lantern{
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array Sigmoid(const af::array& value){
-            return 1/(1 + af::exp(-value));
+        inline af::array Sigmoid(const af::array& _value){
+            return 1/(1 + af::exp(-_value));
         }
 
         /**
          * @brief Linear activation function
-         * @param value
+         * @param _value
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array Linear(const af::array& value){
-            return value;
+        inline af::array Linear(const af::array& _value){
+            return _value;
         }
 
         /**
          * @brief ReLU activation function
-         * @param value
+         * @param _value
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array ReLU(const af::array& value){
-            return af::max(0,value);
+        inline af::array ReLU(const af::array& _value){
+            return af::max(0,_value);
         }
 
         /**
          * @brief LeakyReLU activation function
-         * @param value
+         * @param _value
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array LeakyReLU(const af::array& value){
-            return af::max(value * 0.1, value);
+        inline af::array LeakyReLU(const af::array& _value){
+            return af::max(_value * 0.1, _value);
         }
 
         /**
          * @brief TanH activation function
-         * @param value
+         * @param _value
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array TanH(const af::array& value){
-            af::array exp_ = af::exp(value);
-            af::array nexp_ = af::exp(-value);
+        inline af::array TanH(const af::array& _value){
+            af::array exp_ = af::exp(_value);
+            af::array nexp_ = af::exp(-_value);
             return (exp_ - nexp_)/(exp_ + nexp_);
         }
 
         /**
          * @brief Swish activation function
-         * @param value
+         * @param _value
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array Swish(const af::array& value){
-            return value * Sigmoid(value);
+        inline af::array Swish(const af::array& _value){
+            return _value * Sigmoid(_value);
         }
 
         /**
@@ -97,7 +97,7 @@ namespace lantern{
          * @ingroup LanternFunction
          */
         inline std::unordered_map<std::string, std::function<af::array(const af::array&)>>& GetActivationMap() {
-            static std::unordered_map<std::string, std::function<af::array(const af::array&)>> map = {
+            static std::unordered_map<std::string, std::function<af::array(const af::array&)>> map_ = {
                 {"lantern::activation::Sigmoid", Sigmoid},
                 {"lantern::activation::Linear", Linear},
                 {"lantern::activation::ReLU", ReLU},
@@ -105,7 +105,7 @@ namespace lantern{
                 {"lantern::activation::TanH", TanH},
                 {"lantern::activation::Swish", Swish}
             };
-            return map;
+            return map_;
         }
 
     }
@@ -127,27 +127,26 @@ namespace lantern{
          * @ingroup LanternFunction
          * * =========================================================================================
          */
-        inline af::array BatchNorm(const af::array& _value, const af::array& _beta_gamma, af::array& _dvalue, af::array& _dbeta_gamma) {
+        inline af::array BatchNorm(const af::array& _value, const af::array& _beta_gamma, af::array& _dvalue) {
             
-            af::array mean = af::mean(af::mean(_value,0),1);
-            af::array var = af::sum(af::sum(af::pow(_value - mean,2),0),1) / (_value.dims(0) * _value.dims(1));
-            
-            af::array norm = (_value - mean) / af::sqrt(var + 1e-12);
-            af::array output = _beta_gamma(0,0) * norm + _beta_gamma(0,1);
 
-            // calculate gradient
-            af::array doutput_dnorm = _beta_gamma(0,0);
-            af::array dnorm_dvalue = 1 / af::sqrt(var + 1e-12);
-            af::array dnorm_dmean = -1 / af::sqrt(var + 1e-12);
-            af::array dnorm_dvar = -0.5 * (_value - mean) / af::pow(var + 1e-12, 1.5);
-            af::array dvalue = doutput_dnorm * dnorm_dvalue + 
-                               af::sum(doutput_dnorm * dnorm_dmean) / _value.dims(0) + 
-                               af::sum(doutput_dnorm * dnorm_dvar * 2 * (_value - mean)) / _value.dims(0);
-            af::array dgamma = af::sum(doutput_dnorm * norm) / _value.dims(0);
-            af::array dbeta = af::sum(doutput_dnorm) / _value.dims(0);
-            af::array gradient = af::join(1, dgamma, dbeta); // Concatenate the gradients for value, gamma, and beta
+            af::array mean_ = af::mean(af::mean(_value,0),1);
+            af::array var_ = af::sum(af::sum(af::pow(_value - mean_,2),0),1) / (_value.dims(0) * _value.dims(1));
             
-            return output; 
+            af::array norm_ = (_value - mean_) / af::sqrt(var_ + 1e-12);
+            af::array output_ = _beta_gamma(0,0, af::span) * norm_ + _beta_gamma(0,1, af::span);
+
+          
+            // calculate gradient
+            af::array doutput_dnorm_ = _beta_gamma(0, 0, af::span);
+            af::array doutput_dvar_ = af::sum(af::sum(doutput_dnorm_ * (_value - mean_) * -0.5f * af::pow(var_ + 1e-12,-1.5f),0),1);
+            af::array doutput_dmean_ = af::sum(af::sum(doutput_dnorm_ * -af::pow(var_ + 1e-12, -0.5f), 0), 1) + 
+                                      doutput_dvar_ * (af::sum(af::sum((-2 * (_value - mean_))/(_value.dims().elements()), 0), 1));
+            
+            // result gradient
+            _dvalue = doutput_dnorm_ * af::pow(var_ + 1e-12, -0.5f) + doutput_dvar_ * (2 * (_value - mean_)) / (_value.dims().elements()) + doutput_dmean_ * (1.0f/ _value.dims().elements());
+            
+            return output_; 
         }
 
     }
@@ -207,25 +206,25 @@ namespace lantern{
         * @ingroup LanternFunction
         * =========================================================================================
         */
-        inline af::array AvgPool(const af::array& input, const uint32_t& pool_h,const uint32_t& pool_w) {
+        inline af::array AvgPool(const af::array& _input, const uint32_t& _pool_h,const uint32_t& _pool_w) {
 
             int32_t dims_0, dims_1, dims_2;
-            af::array res = af::reorder(input, 0, 2, 1);
-            res = af::moddims(res, res.dims(0), res.dims(1) * res.dims(2), 1);
-            dims_0 = res.dims(0);
-            dims_1 = res.dims(1);
-            dims_2 = res.dims(2);
-            res = af::moddims(res, pool_h, res.dims(1) / pool_h, res.dims(0));
-            res = af::reorder(res, 0, 2, 1);
-            res = af::moddims(res, pool_h, pool_w, (res.dims(1) * res.dims(0)) / (pool_w * pool_h) * res.dims(2));
-            res = af::sum(res, 1);
-            res = af::sum(res, 0) / (pool_h * pool_w);
-            res.eval();
-            res = af::reorder(res, 2, 1, 0);
-            res = af::moddims(res, dims_0 / pool_h, dims_1 / pool_w, 1);
-            res = af::moddims(res, input.dims(0) / pool_h, input.dims(1) / pool_w, input.dims(2));
+            af::array res_ = af::reorder(_input, 0, 2, 1);
+            res_ = af::moddims(res_, res_.dims(0), res_.dims(1) * res_.dims(2), 1);
+            dims_0 = res_.dims(0);
+            dims_1 = res_.dims(1);
+            dims_2 = res_.dims(2);
+            res_ = af::moddims(res_, _pool_h, res_.dims(1) / _pool_h, res_.dims(0));
+            res_ = af::reorder(res_, 0, 2, 1);
+            res_ = af::moddims(res_, _pool_h, _pool_w, (res_.dims(1) * res_.dims(0)) / (_pool_w * _pool_h) * res_.dims(2));
+            res_ = af::sum(res_, 1);
+            res_ = af::sum(res_, 0) / (_pool_h * _pool_w);
+            res_.eval();
+            res_ = af::reorder(res_, 2, 1, 0);
+            res_ = af::moddims(res_, dims_0 / _pool_h, dims_1 / _pool_w, 1);
+            res_ = af::moddims(res_, _input.dims(0) / _pool_h, _input.dims(1) / _pool_w, _input.dims(2));
 
-            return res.T();
+            return res_.T();
         }
 
         /**
@@ -283,16 +282,16 @@ namespace lantern{
             /**
              * Then we get the index of rows and columns will pass to MaxPool
              */
-            af::array valid_rows = af::where(mask_rows_); 
-            af::array valid_cols = af::where(mask_cols_); 
-            af::array valid_input_ = res_(valid_rows,valid_cols);
+            af::array valid_rows_ = af::where(mask_rows_); 
+            af::array valid_cols_ = af::where(mask_cols_); 
+            af::array valid_input_ = res_(valid_rows_,valid_cols_);
 
-            af::array result;
+            af::array result_;
 
             switch (PoolType)
             {
                 case lantern::cnn::node::NodeType::MAX_POOL:{
-                    result = MaxPool(
+                    result_ = MaxPool(
                         valid_input_,
                         _pool_h,
                         _pool_w
@@ -300,7 +299,7 @@ namespace lantern{
                     break;
                 }
                 case lantern::cnn::node::NodeType::AVG_POOL:{
-                    result = AvgPool(
+                    result_ = AvgPool(
                         valid_input_,
                         _pool_h,
                         _pool_w
@@ -313,7 +312,7 @@ namespace lantern{
             }
 
             return {
-                result,
+                result_,
                 valid_input_ // this is use for backpropagation of Pooling
             };
         }
@@ -362,16 +361,28 @@ namespace lantern{
             return PoolWithStride<lantern::cnn::node::NodeType::AVG_POOL>(_input,_pool_h,_pool_w,_stride);
         }
 
+
+        /**
+         * @brief Global average pooling
+         * @param _input 
+         * @return af::array
+         */
+        inline af::array GlobalAvgPooling(const af::array& _input) {
+
+            return af::sum(af::sum(_input,0),1) / (_input.dims(0) * _input.dims(1));
+
+        }
+
         /**
          * @brief Get pooling Map, this is to get pooling function from string
          * @return std::unordered_map<std::string, std::function<std::pair<af::array,af::array>(const af::array&, uint32_t const&, uint32_t const&, const af::dim4&)>>&
          */
         inline std::unordered_map<std::string, std::function<std::pair<af::array,af::array>(const af::array&, uint32_t const&, uint32_t const&, const af::dim4&)>>& GetPoolingMaps() {
-            static std::unordered_map<std::string, std::function<std::pair<af::array,af::array>(const af::array&, uint32_t const&, uint32_t const&, const af::dim4&)>> map = {
+            static std::unordered_map<std::string, std::function<std::pair<af::array,af::array>(const af::array&, uint32_t const&, uint32_t const&, const af::dim4&)>> map_ = {
                 {"lantern::pooling::MaxPoolWithStride", MaxPoolWithStride},
                 {"lantern::pooling::AvgPoolWithStride",AvgPoolWithStride}
             };
-            return map;
+            return map_;
         }
 
     }
@@ -381,13 +392,13 @@ namespace lantern{
 
         /**
          * @brief Softmat probability function
-         * @param value 
+         * @param _value 
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array SoftMax(const af::array& value){
-            af::array exp_ = af::exp(value);
-            af::array sum_exp_ = af::sum(af::exp(value));
+        inline af::array SoftMax(const af::array& _value){
+            af::array exp_ = af::exp(_value);
+            af::array sum_exp_ = af::sum(af::exp(_value));
             return exp_/sum_exp_;
         }
 
@@ -409,36 +420,36 @@ namespace lantern{
 
         /**
          * @brief Sum squared resiudal loss function
-         * @param output 
-         * @param target 
+         * @param _output 
+         * @param _target 
          * @return double
          * @ingroup LanternFunction
          */
-        inline double SumSquareResidual(const af::array& output, const af::array& target){
-            return af::pow(target - output,2).scalar<double>();
+        inline double SumSquareResidual(const af::array& _output, const af::array& _target){
+            return af::pow(_target - _output,2).scalar<double>();
         }
 
         /**
          * @brief Cross Entropy loss function
-         * @param output
-         * @param target
+         * @param _output
+         * @param _target
          * @return double
          * @ingroup LanternFunction
          */
-        inline double CrossEntropy(const af::array& output, const af::array& target){
-            return af::sum(-(target * af::log(output + 1e-012))).scalar<double>();
+        inline double CrossEntropy(const af::array& _output, const af::array& _target){
+            return af::sum(-(_target * af::log(_output + 1e-012))).scalar<double>();
         }
 
         /**
          * @brief Binary Cross Entropy
-         * @param output 
-         * @param target 
+         * @param _output 
+         * @param _target 
          * @return double
          */
-        inline double BinaryCrossEntropy(const af::array& output, const af::array& target) {
-            af::array true_prob = target * af::log(output + 1e-012);
-            af::array false_prob = (1 - target) * af::log(1 - output + 1e-012);
-            return af::sum(-(true_prob + false_prob)).scalar<double>();
+        inline double BinaryCrossEntropy(const af::array& _output, const af::array& _target) {
+            af::array true_prob_ = _target * af::log(_output + 1e-012);
+            af::array false_prob_ = (1 - _target) * af::log(1 - _output + 1e-012);
+            return af::sum(-(true_prob_ + false_prob_)).scalar<double>();
         }
 
         /**
@@ -447,12 +458,12 @@ namespace lantern{
          * @ingroup LanternFunction
          */
         inline std::unordered_map<std::string, std::function<double(const af::array&, const af::array&)>>& GetLossMaps() {
-            static std::unordered_map<std::string, std::function<double(const af::array&, const af::array&)>> map = {
+            static std::unordered_map<std::string, std::function<double(const af::array&, const af::array&)>> map_ = {
                 {"lantern::loss::SumSquareResidual",SumSquareResidual},
                 {"lantern::loss::CrossEntropy", CrossEntropy},
                 {"lantern::loss::BinaryCrossEntropy", BinaryCrossEntropy}
             };
-            return map;
+            return map_;
         }
 
     }
@@ -522,7 +533,7 @@ namespace lantern{
              * Create a temporary output variabel with the size same as the input
              * in feedforward
              */
-            af::array temp_out = af::constant(0.0, _input.dims(),f64);
+            af::array temp_out_ = af::constant(0.0, _input.dims(),f64);
             af::array shaping_derivative_ = af::constant(0.0, _input.dims(),f64), prev_gradient_;
 
             // do derivative of pool
@@ -569,9 +580,9 @@ namespace lantern{
              * Get the dimension of preprocess input in feedforward to know 
              * what is the dimension after stride apply
              */
-            af::dim4 out_dims = temp_out(
-                af::seq(0,temp_out.dims(0) - 1,_stride[1]), // remember stride[1] is height
-                af::seq(0,temp_out.dims(1) - 1,_stride[0]), // stride[0] is width
+            af::dim4 out_dims = temp_out_(
+                af::seq(0,temp_out_.dims(0) - 1,_stride[1]), // remember stride[1] is height
+                af::seq(0,temp_out_.dims(1) - 1,_stride[0]), // stride[0] is width
                 af::span
             ).dims();
 
@@ -640,9 +651,9 @@ namespace lantern{
              * Then get all the row and columns of temporary output
              * and replace them with actual derivative of maxpool
              */
-            temp_out(
-                af::seq(0,temp_out.dims(0) - 1,_stride[1]),
-                af::seq(0,temp_out.dims(1) - 1,_stride[0]),
+            temp_out_(
+                af::seq(0,temp_out_.dims(0) - 1,_stride[1]),
+                af::seq(0,temp_out_.dims(1) - 1,_stride[0]),
                 af::span,
                 af::span
             ) = res_;
@@ -654,10 +665,10 @@ namespace lantern{
                 af::span
             ) = prev_gradient_;
 
-            temp_out *= shaping_derivative_;
-            temp_out.eval();
+            temp_out_ *= shaping_derivative_;
+            temp_out_.eval();
 
-            return temp_out.T();
+            return temp_out_.T();
         }
 
         /**
@@ -690,67 +701,75 @@ namespace lantern{
             return PoolWithStride<lantern::cnn::node::NodeType::AVG_POOL>(_input,_modify_input,_pool_h,_pool_w,_stride,_prev_gradient);
         }
 
+        inline af::array GlobalAvgPooling(const af::array& _input) {
+            return af::constant(1.0f / _input.dims().elements(), _input.dims(), f64);
+        }
+
         /**
          * @brief Derivative of sigmoid
-         * @param value 
+         * @param _value 
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array Sigmoid(const af::array& value){
-            return value * (1 - value);
+        inline af::array Sigmoid(const af::array& _value){
+            return _value * (1 - _value);
         }
 
         /**
          * @brief Derivative of swish
-         * @param value 
+         * @param _value 
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array Swish(const af::array& value){
-            return activation::Sigmoid(value) +  Sigmoid(value) * value;
+        inline af::array Swish(const af::array& _value){
+            return activation::Sigmoid(_value) +  Sigmoid(_value) * _value;
         }
 
         /**
          * @brief Derivative of linear
-         * @param value 
+         * @param _value 
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array Linear(const af::array& value){
-            return af::constant(1.0f,value.dims(0),value.dims(1),f64);
+        inline af::array Linear(const af::array& _value){
+            return af::constant(1.0f,_value.dims(0),_value.dims(1),f64);
+        }
+
+        inline af::array ReLU(const af::array& _value) {
+            return (_value > 0).as(f64);
         }
 
         /**
          * @brief Derivative of SumSquareResidual
-         * @param output 
-         * @param target 
+         * @param _output 
+         * @param _target 
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array SumSquareResidual(const af::array& output, const af::array& target){
-            return -2 * (target - output);
+        inline af::array SumSquareResidual(const af::array& _output, const af::array& _target){
+            return -2 * (_target - _output);
         }
 
         /**
          * @brief Derivative of CrossEntropy with softmax out function
-         * @param output 
-         * @param target 
+         * @param _output 
+         * @param _target 
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array CrossEntropy(const af::array& output, const af::array& target){
-            return output - target;
+        inline af::array CrossEntropy(const af::array& _output, const af::array& _target){
+            return _output - _target;
         }
 
         /**
          * @brief Derivative of BinaryCrossEntropy with Sigmoid out function
-         * @param output
-         * @param target
+         * @param _output
+         * @param _target
          * @return af::array
          * @ingroup LanternFunction
          */
-        inline af::array BinaryCrossEntropy(const af::array& output, const af::array& target) {
-            return output - target;
+        inline af::array BinaryCrossEntropy(const af::array& _output, const af::array& _target) {
+            return _output - _target;
         }
 
         /**
@@ -759,11 +778,11 @@ namespace lantern{
          * @ingroup LanternFunction
          */
         inline std::unordered_map<std::string, std::function<af::array(const af::array&, const af::array&, const uint32_t&, const uint32_t&, const af::dim4&, const af::array&)>>& GetDerivativePoolMaps() {
-            static std::unordered_map<std::string, std::function<af::array(const af::array&, const af::array&, const uint32_t&, const uint32_t&, const af::dim4&, const af::array&)>> map = {
+            static std::unordered_map<std::string, std::function<af::array(const af::array&, const af::array&, const uint32_t&, const uint32_t&, const af::dim4&, const af::array&)>> map_ = {
                 {"lantern::derivative::MaxPoolWithStride",MaxPoolWithStride},
                 {"lantern::derivative::AvgPoolWithStride",AvgPoolWithStride}
             };
-            return map;
+            return map_;
         }
 
         /**
@@ -772,11 +791,11 @@ namespace lantern{
          * @ingroup LanternFunction
          */
         inline std::unordered_map<std::string, std::function<af::array(const af::array&, const af::array&)>>& GetDerivativeLossMaps() {
-            static std::unordered_map<std::string, std::function<af::array(const af::array&, const af::array&)>> map = {
+            static std::unordered_map<std::string, std::function<af::array(const af::array&, const af::array&)>> map_ = {
                 {"lantern::derivative::SumSquareResidual", SumSquareResidual},
                 {"lantern::derivative::CrossEntropy", CrossEntropy}
             };
-            return map;
+            return map_;
         }
 
         /**
@@ -785,12 +804,12 @@ namespace lantern{
          * @ingroup LanternFunction
          */
         inline std::unordered_map<std::string, std::function<af::array(const af::array&)>>& GetDerivativeActivationMaps() {
-            static std::unordered_map<std::string, std::function<af::array(const af::array&)>> map = {
+            static std::unordered_map<std::string, std::function<af::array(const af::array&)>> map_ = {
                 {"lantern::derivative::Sigmoid",Sigmoid},
                 {"lantern::derivative::Swish",Swish},
                 {"lantern::derivative::Linear",Linear}
             };
-            return map;
+            return map_;
         }
         
 

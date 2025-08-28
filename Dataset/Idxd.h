@@ -19,29 +19,29 @@ namespace lantern {
         class Idx {
         private:
 
-            std::ifstream file;
-            lantern::utility::Vector<int> dims;
-            lantern::utility::Vector<T> data;
-            uint8_t dimension;
-            long long total_elements = 1;
+            std::ifstream m_file;
+            lantern::utility::Vector<int> m_dims;
+            lantern::utility::Vector<T> m_data;
+            uint8_t m_dimension;
+            long long m_total_elements = 1;
 
             /**
              * @brief Read with big endian for file
              * @param file 
              * @return int
              */
-            int ReadBigEndian(std::ifstream& file){
-                uint8_t bytes[4]; // read 4 bytes of file data
-                // take bytes from file because its need char* weh need to cast unsigned char to char
-                if (!file.read(reinterpret_cast<char*>(bytes), 4)) {
+            int ReadBigEndian(std::ifstream& _file){
+                uint8_t bytes_[4]; // read 4 bytes_ of _file data
+                // take bytes_ from _file because its need char* weh need to cast unsigned char to char
+                if (!_file.read(reinterpret_cast<char*>(bytes_), 4)) {
                     throw std::runtime_error("lantern dataset MNIST error, Unexpected EOF while reading big endian data");
                 }
-                // then left shift all bytes to fix order because if we just use implicit cast
+                // then left shift all bytes_ to fix order because if we just use implicit cast
                 // the order of byte will wrong
-                return  (static_cast<int>(bytes[0]) << 24) |
-                        (static_cast<int>(bytes[1]) << 16) |
-                        (static_cast<int>(bytes[2]) << 8)  |
-                        static_cast<int>(bytes[3]);
+                return  (static_cast<int>(bytes_[0]) << 24) |
+                        (static_cast<int>(bytes_[1]) << 16) |
+                        (static_cast<int>(bytes_[2]) << 8)  |
+                        static_cast<int>(bytes_[3]);
             }
 
         public:
@@ -55,46 +55,45 @@ namespace lantern {
                         throw std::runtime_error(std::string("Cannot find [")+_file+"]\n");
                     }
                     
-                    this->file = std::ifstream(_file,std::ios::binary);
+                    this->m_file = std::ifstream(_file,std::ios::binary);
 
-                    if(!this->file.is_open()){
+                    if(!this->m_file.is_open()){
                         throw std::runtime_error(std::string("Cannot open [")+_file+"]\n");
                     }
 
-                    uint8_t magic_number[4];
-                    this->file.read(reinterpret_cast<char*>(magic_number),4);
+                    uint8_t magic_number_[4];
+                    this->m_file.read(reinterpret_cast<char*>(magic_number_),4);
 
                     // check if first two byte is not 0
-                    if(magic_number[0] != 0 || magic_number[1] != 0){
+                    if(magic_number_[0] != 0 || magic_number_[1] != 0){
                         throw std::runtime_error(std::string("File [")+_file+"], is not idx file or invalid format\n");
                     }
 
-                    uint8_t type = magic_number[2]; // get type
-                    this->dimension = magic_number[3]; // get dimension
+                    uint8_t type = magic_number_[2]; // get type
+                    this->m_dimension = magic_number_[3]; // get dimension
                     
-                    this->dims.resizeCapacity(this->dimension);
-                    for(uint32_t i = 0; i < this->dimension; i++){
-                        this->dims.push_back(
-                            this->ReadBigEndian(this->file)
+                    this->m_dims.resizeCapacity(this->m_dimension);
+                    for(uint32_t i = 0; i < this->m_dimension; i++){
+                        this->m_dims.push_back(
+                            this->ReadBigEndian(this->m_file)
                         );
-                        this->total_elements *= this->dims.back();
+                        this->m_total_elements *= this->m_dims.back();
                     }
 
-                    this->data.resizeCapacity(this->total_elements);
-                    uint32_t loading_bar = 0;
+                    this->m_data.resizeCapacity(this->m_total_elements);
                     if (std::is_same_v<T,uint8_t> && type == 0x08){
-                        this->file.read(reinterpret_cast<char*>(this->data.getData()),this->total_elements * sizeof(uint8_t));
+                        this->m_file.read(reinterpret_cast<char*>(this->m_data.data()),this->m_total_elements * sizeof(uint8_t));
                     }else if (std::is_same_v<T,int> && type == 0x0C){
-                        for(long long i = 0; i < this->total_elements; i++){
-                            this->data.push_back(
-                                this->ReadBigEndian(this->file)
+                        for(long long i = 0; i < this->m_total_elements; i++){
+                            this->m_data.push_back(
+                                this->ReadBigEndian(this->m_file)
                             );
                         }
                     }else {
                         throw std::runtime_error(std::string("File [")+_file+"], invalid format\n");
                     }
 
-                    this->file.close();
+                    this->m_file.close();
 
                 }catch(std::runtime_error& error){
                     std::cerr << "Error : " << error.what() << '\n';
@@ -103,13 +102,13 @@ namespace lantern {
             }
 
             T* operator [](long long index){
-                long long start = index;
-                if(this->dims.size() > 1){
-                    for(uint32_t i = 0; i < this->dims.size() - 1; i++){
-                        start *= (this->dims.at(i + 1));
+                long long start_ = index;
+                if(this->m_dims.size() > 1){
+                    for(uint32_t i = 0; i < this->m_dims.size() - 1; i++){
+                        start_ *= (this->m_dims.at(i + 1));
                     }
                 }
-                return this->data.getData() + start;
+                return this->m_data.data() + start_;
             }
             
             /**
@@ -117,7 +116,7 @@ namespace lantern {
              * @return lantern::utility::Vector<T>*
              */
             lantern::utility::Vector<T>* GetData(){
-                return &this->data;
+                return &this->m_data;
             }
 
             /**
@@ -128,7 +127,7 @@ namespace lantern {
              * @return lantern::utility::Vector<int>*
              */
             lantern::utility::Vector<int>* GetDims(){
-                return &this->dims;
+                return &this->m_dims;
             }
 
             /**
@@ -139,7 +138,7 @@ namespace lantern {
              * @return long long
              */
             long long GetTotalElements(){
-                return this->total_elements;
+                return this->m_total_elements;
             }
 
         };

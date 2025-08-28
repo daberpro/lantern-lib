@@ -10,30 +10,31 @@ namespace lantern {
     
             class Base {
             protected:
-                double learning_rate = 0.01, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-8;
-                uint32_t iteration = 0;
+                double m_learning_rate = 0.01, m_beta_1 = 0.9, m_beta_2 = 0.999, m_epsilon = 1e-8;
+                uint32_t m_iteration = 0;
+                af::array m_mt, m_vt;
+                lantern::utility::Vector<af::array> m_vector_velocity;
+                lantern::utility::Vector<af::array> m_stack_previous_gradient;
+
             public:
-                af::array mt, vt;
-                lantern::utility::Vector<af::array> vector_velocity;
-                lantern::utility::Vector<af::array> stack_previous_gradient;
     
-                Base(double learning_rate = 0.01, double beta_1 = 0.9, double beta_2 = 0.999,double epsilon = 1e-8) : 
-                learning_rate(learning_rate), 
-                beta_1(beta_1), 
-                beta_2(beta_2), 
-                epsilon(epsilon) {}
+                Base(const double& _learning_rate = 0.01,const double& _beta_1 = 0.9,const double& _beta_2 = 0.999,const double& _epsilon = 1e-8) : 
+                m_learning_rate(_learning_rate), 
+                m_beta_1(_beta_1), 
+                m_beta_2(_beta_2), 
+                m_epsilon(_epsilon) {}
     
                 virtual ~Base(){};
-                virtual af::array GetDelta(af::array& gradient, uint32_t& index){
+                virtual af::array GetDelta(const af::array& _gradient, const uint32_t& _index){
                     return af::array();
                 };
     
                 lantern::utility::Vector<af::array>& GetVectorVelocity(){
-                    return this->vector_velocity;
+                    return this->m_vector_velocity;
                 }
                 
                 lantern::utility::Vector<af::array>& GetStackPrevGrad(){
-                    return this->stack_previous_gradient;
+                    return this->m_stack_previous_gradient;
                 }
             };
     

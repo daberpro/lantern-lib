@@ -1,13 +1,10 @@
-﻿#include "pch.h"
-#include "Headers/Logging.h"
-#include "Headers/File.h"
-#include "Headers/ModelManager.h"
-#include "Headers/Utility.h"
-#include "ConvolutionalNeuralNetwork/ConvolutionalNeuralNetwork.h"
-#include "FeedForwardNetwork/FeedForwardNetwork.h"
-#include "Dataset/Dataset.h"
+#include "../pch.h"
+#include "../Headers/File.h"
+#include "../Headers/Logging.h"
+#include "../FeedForwardNetwork/FeedForwardNetwork.h"
 
-int main(int argc, char *argv[])
+
+int main(int argc, char* argv[])
 {
     try
     {
@@ -18,8 +15,9 @@ int main(int argc, char *argv[])
 
         // Read CSV File from Iris Flower Dataset
         std::string current_path = std::filesystem::current_path().string();
+        // Create partition data and split data into 80% train 20% test
         auto dataset = lantern::file::ReadCSVFile(current_path + "/dataset/Iris_Flower/IRIS.csv");
-        auto [train,test] = lantern::data::PartitionDataset(dataset, 0.8, true);
+        auto [train, test] = lantern::data::PartitionDataset(dataset, 0.8, true);
 
         // container to hold train input data and target data
         lantern::utility::Vector<double> train_input_data;
@@ -31,9 +29,9 @@ int main(int argc, char *argv[])
 
         // get index map to manually mapping target string 
         auto* dataset_index_map = dataset.GetIndexMapPtr();
-        dataset_index_map->insert({"Iris-setosa",       0}); // set value for Iris-setosa to become index 0
-        dataset_index_map->insert({"Iris-versicolor",   1}); // set value for Iris-setosa to become index 1
-        dataset_index_map->insert({"Iris-virginica",    2}); // set value for Iris-setosa to become index 2
+        dataset_index_map->insert({ "Iris-setosa",       0 }); // set value for Iris-setosa to become index 0
+        dataset_index_map->insert({ "Iris-versicolor",   1 }); // set value for Iris-setosa to become index 1
+        dataset_index_map->insert({ "Iris-virginica",    2 }); // set value for Iris-setosa to become index 2
 
         // create definition of FFN layer
         lantern::ffn::layer::Layer layer;
@@ -53,10 +51,10 @@ int main(int argc, char *argv[])
         uint32_t epoch = 500;
         uint32_t iteration = 0;
         double loss;
-        af::array input,target;
-        auto *outputs = layer.GetOutputs();
-        auto *prev_gradients = layer.GetPrevradient();
-        
+        af::array input, target;
+        auto* outputs = layer.GetOutputs();
+        auto* prev_gradients = layer.GetPrevradient();
+
         uint32_t total_size_of_train_class = train.size();
         uint32_t train_batch_size = total_size_of_train_class;
         lantern::utility::Vector<uint32_t> train_batch_index;
@@ -93,11 +91,11 @@ int main(int argc, char *argv[])
             for (uint32_t i = 0; i < train_batch_size; i++)
             {
 
-            
-                dataset.Row<double>(train_input_data,train,train_batch_index[i],0,4);
-                dataset.RowIndexMapping(train_target_data,train,train_batch_index[i],4,1);
-                
-                input = af::array(1,4, train_input_data.data());
+
+                dataset.Row<double>(train_input_data, train, train_batch_index[i], 0, 4);
+                dataset.RowIndexMapping(train_target_data, train, train_batch_index[i], 4, 1);
+
+                input = af::array(1, 4, train_input_data.data());
                 target = target_map_array.row(train_target_data.front());
 
                 outputs->front() = input.T(); // set the first output as input
@@ -133,8 +131,8 @@ int main(int argc, char *argv[])
         for (uint32_t i = 0; i < test_batch_size; i++)
         {
 
-            dataset.Row<double>(test_input_data,test,test_batch_index[i], 0, 4);
-            dataset.RowIndexMapping(test_target_data,test,test_batch_index[i], 4, 1);
+            dataset.Row<double>(test_input_data, test, test_batch_index[i], 0, 4);
+            dataset.RowIndexMapping(test_target_data, test, test_batch_index[i], 4, 1);
             input = af::array(1, 4, test_input_data.data());
 
             outputs->front() = input.T();
@@ -150,12 +148,12 @@ int main(int argc, char *argv[])
         }
 
     }
-    catch (std::exception &error)
+    catch (std::exception& error)
     {
 
         std::cout << "\nError Lantern : " << error.what() << "\n\n";
         std::cout << "Call stack:\n";
-        for (const auto &entry : std::stacktrace::current())
+        for (const auto& entry : std::stacktrace::current())
         {
             std::cout << entry << '\n';
         }

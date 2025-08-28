@@ -34,20 +34,21 @@ namespace lantern
                 const uint32_t _batch_size
             ){
 
-                double batch_size = static_cast<double>(_batch_size);
-                auto all_layer_sizes = _layer.GetAllLayerSizes();
-                auto all_layer_type = _layer.GetAllNodeTypeOfLayer();
-                auto all_convolve_layer = _layer.GetAllConvolveLayerInfo();
-                auto all_pooling_layer = _layer.GetAllPoolingLayerInfo();
-                auto pooling_modification_input_result = _layer.GetPoolingModificationInputResult();
+                double batch_size_ = static_cast<double>(_batch_size);
+                auto* all_layer_sizes_ = _layer.GetAllLayerSizes();
+                auto* all_layer_type_ = _layer.GetAllNodeTypeOfLayer();
+                auto* all_convolve_layer = _layer.GetAllConvolveLayerInfo();
+                auto* all_pooling_layer = _layer.GetAllPoolingLayerInfo();
+                auto* pooling_modification_input_result = _layer.GetPoolingModificationInputResult();
 
-                auto weights_ = _layer.GetWeights();
-                auto bias_ = _layer.GetBias();
-                auto prev_gradient_ = _layer.GetPrevGradient();
-                auto outputs_ = _layer.GetOutputs();
-
-                auto batch_norm_params_ = _layer.GetBatchNormParams();
-                auto batch_norm_derivative_params_ = _layer.GetBatchNormDerivativeParams();
+                auto* weights_ = _layer.GetWeights();
+                auto* bias_ = _layer.GetBias();
+                auto* prev_gradient_ = _layer.GetPrevGradient();
+                auto* outputs_ = _layer.GetOutputs();
+                    
+                auto* batch_norm_params_ = _layer.GetBatchNormParams();
+                auto* batch_norm_derivative_params_ = _layer.GetBatchNormDerivativeParams();
+                auto* batch_norm_derivative_outputs_ = _layer.GetBatchNormDerivativeOutputs();
 
                 af::array output_, prev_output_, gradient_, gradient_weight_, gradient_bias_, gradient_out_;
 
@@ -55,21 +56,21 @@ namespace lantern
                 int pooling_index_ = all_pooling_layer->size() - 1;
                 int batch_norm_index_ = batch_norm_params_->size() - 1;
 
-                for (int i = all_layer_sizes->size() - 1; i > 0; i--)
+                for (int i = all_layer_sizes_->size() - 1; i > 0; i--)
                 {
 
-                    switch ((*all_layer_type)[i])
+                    switch ((*all_layer_type_)[i])
                     {
                         case lantern::cnn::node::NodeType::CONVOLVE:
                         {
-                            lantern::cnn::layer::ConvolveLayerInfo &convolve_info = (*all_convolve_layer)[convolve_index_];
+                            lantern::cnn::layer::ConvolveLayerInfo &convolve_info_ = (*all_convolve_layer)[convolve_index_];
                             gradient_weight_ = af::convolve2GradientNN(
                                 (*prev_gradient_)[i],
                                 (*outputs_)[i],
                                 (*weights_)[convolve_index_],
                                 (*outputs_)[i + 1],
-                                convolve_info.stride,
-                                convolve_info.padding,
+                                convolve_info_.m_stride,
+                                convolve_info_.m_padding,
                                 af::dim4(1,1,0,0),
                                 AF_CONV_GRADIENT_FILTER
                             );
@@ -79,8 +80,8 @@ namespace lantern
                                 (*outputs_)[i],
                                 (*weights_)[convolve_index_],
                                 (*outputs_)[i + 1],
-                                convolve_info.stride,
-                                convolve_info.padding,
+                                convolve_info_.m_stride,
+                                convolve_info_.m_padding,
                                 af::dim4(1,1,0,0),
                                 AF_CONV_GRADIENT_DATA
                             );
@@ -88,8 +89,8 @@ namespace lantern
                             gradient_weight_ = gradient_weight_.as(f64);
                             gradient_bias_ = (*prev_gradient_)[i];
                             
-                            gradient_weight_ /= batch_size;
-                            gradient_bias_ /= batch_size;
+                            gradient_weight_ /= batch_size_;
+                            gradient_bias_ /= batch_size_;
 
                             gradient_weight_.eval();
                             gradient_bias_.eval();
@@ -118,7 +119,7 @@ namespace lantern
                         }
                         case lantern::cnn::node::NodeType::RELU:
                         {
-                            gradient_ = ((*outputs_)[i] > 0).as(f64);
+                            gradient_ = lantern::derivative::ReLU((*outputs_)[i]);
                             gradient_ *= (*prev_gradient_)[i];
                             gradient_.eval();
                             break;
@@ -144,9 +145,9 @@ namespace lantern
                             gradient_ = lantern::derivative::AvgPoolWithStride(
                                 (*outputs_)[i],
                                 modification_input_,
-                                pool_info_.size_h,
-                                pool_info_.size_w,
-                                pool_info_.stride,
+                                pool_info_.m_size_h,
+                                pool_info_.m_size_w,
+                                pool_info_.m_stride,
                                 (*prev_gradient_)[i]
                             );
                             if(pooling_index_ - 1 >= 0){
@@ -163,9 +164,9 @@ namespace lantern
                             gradient_ = lantern::derivative::MaxPoolWithStride(
                                 (*outputs_)[i],
                                 modification_input_,
-                                pool_info_.size_h,
-                                pool_info_.size_w,
-                                pool_info_.stride,
+                                pool_info_.m_size_h,
+                                pool_info_.m_size_w,
+                                pool_info_.m_stride,
                                 (*prev_gradient_)[i]
                             );
                             if(pooling_index_ - 1 >= 0){
@@ -184,15 +185,29 @@ namespace lantern
                         case lantern::cnn::node::NodeType::BATCH_NORM:
                         {
                             af::array& batch_norm_param = (*_layer.GetBatchNormParams())[batch_norm_index_];
-                            af::array& batch_norm_derivative_param = (*_layer.GetBatchNormDerivativeParams())[batch_norm_index_];
+                            
+                            af::array dgamma = af::sum(af::sum((*prev_gradient_)[i] * (*outputs_)[i], 0), 1);
+                            af::array dbeta = af::sum(af::sum((*prev_gradient_)[i], 0), 1);
 
-                            gradient_ = (*prev_gradient_)[i];
-                            batch_norm_param -= _optimizer.GetDeltaBatchNorm(batch_norm_derivative_param / batch_size, batch_norm_index_);
+                            gradient_ = (*batch_norm_derivative_outputs_)[batch_norm_index_];
+                            gradient_ *= (*prev_gradient_)[i];
+                            gradient_.eval();
+
+                            batch_norm_param -= _optimizer.GetDeltaBatchNorm(af::join(1,dgamma,dbeta) / batch_size_, batch_norm_index_);
                             
                             if(batch_norm_index_ - 1 >= 0) {
                                 batch_norm_index_--;
                             }
                             break;
+                        }
+                        case lantern::cnn::node::NodeType::GLOBAL_AVG_POOL: {
+
+                            gradient_ = lantern::derivative::GlobalAvgPooling((*outputs_)[i]);
+                            gradient_ *= (*prev_gradient_)[i];
+                            gradient_.eval();
+
+                            break;
+
                         }
                     }
 

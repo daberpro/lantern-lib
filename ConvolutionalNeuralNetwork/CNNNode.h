@@ -32,8 +32,8 @@ namespace lantern {
              * @param node 
              * @return std::string
              */
-            inline std::string GetNodeTypeAsString(NodeType node) {
-                switch (node) {
+            inline std::string GetNodeTypeAsString(NodeType _node) {
+                switch (_node) {
                     case NodeType::NOTHING:      return "lantern::cnn::node::NodeType::NOTHING";
                     case NodeType::MAX_POOL:     return "lantern::cnn::node::NodeType::MAX_POOL";
                     case NodeType::CONVOLVE:    return "lantern::cnn::node::NodeType::CONVOLVE";
@@ -80,14 +80,14 @@ namespace nlohmann
     template <>
     struct adl_serializer<lantern::cnn::node::NodeType>
     {
-        static lantern::cnn::node::NodeType from_json(const json& j)
+        static lantern::cnn::node::NodeType from_json(const json& _j)
         {
-            return lantern::cnn::node::GetNodeTypeFromString(j.get<std::string>());
+            return lantern::cnn::node::GetNodeTypeFromString(_j.get<std::string>());
         }
 
-        static void to_json(json& j,const lantern::cnn::node::NodeType& node)
+        static void to_json(json& _j,const lantern::cnn::node::NodeType& _node)
         {
-            j = lantern::cnn::node::GetNodeTypeAsString(node);
+            _j = lantern::cnn::node::GetNodeTypeAsString(_node);
         }
     };
 } // namespace nlohmann

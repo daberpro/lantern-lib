@@ -24,9 +24,9 @@ namespace lantern
              * @tparam Optimizer
              * @tparam RegularizationFunction
              * @param _layer Layer of model
-             * @param _parameters Stack of weights ans bias
-             * @param _prev_gradient Stack of gradient need to compute all weights and bias
-             * @param _outputs Stack of output
+             * @param _parameters Stack of weights_ ans bias
+             * @param _prev_gradient Stack of gradient_ need to compute all weights_ and bias
+             * @param _outputs Stack of input_
              * @param _optimizer Optimizer for model
              * @param _batch_size Batch size
              * @ingroup LanternBackprop
@@ -34,89 +34,106 @@ namespace lantern
             template <typename Optimizer>
             inline void Backpropagate(
                 lantern::ffn::layer::Layer &_layer,
-                lantern::utility::Vector<af::array> &_parameters,
-                lantern::utility::Vector<af::array> &_prev_gradient,
-                lantern::utility::Vector<af::array> &_outputs,
                 Optimizer &_optimizer,
-                const uint32_t _batch_size = 1
-            ){
+                const uint32_t _batch_size = 1)
+            {
+
+                auto *parameters_ = _layer.GetParameters();
+                auto *outputs_ = _layer.GetOutputs();
+                auto *prev_gradient_ = _layer.GetPrevradient();
 
                 double batch_size = static_cast<double>(_batch_size);
                 lantern::utility::Vector<uint32_t> *all_layer_sizes = _layer.GetAllLayerSizes();
                 lantern::utility::Vector<lantern::ffn::node::NodeType> *all_layer_type = _layer.GetAllNodeTypeOfLayer();
-                af::array output, prev_output, gradient, gradient_weight, gradient_bias, all_gradient, weights;
+                af::array input_, output_, gradient_, gradient_weight_, gradient_bias_, all_gradient_, weights_;
 
                 for (uint32_t current_layer = (*all_layer_sizes).size() - 1; current_layer > 0; current_layer--)
                 {
 
-                    prev_output = _outputs[current_layer];
-                    output = _outputs[current_layer - 1];
-                    af::array &parameters = _parameters[current_layer - 1];
-                    weights = parameters.cols(0, parameters.dims(1) - 2);
+                    output_ = (*outputs_)[current_layer];
+                    input_ = (*outputs_)[current_layer - 1];
+                    af::array& parameters_from_layer_ = (*parameters_)[current_layer - 1];
+                    weights_ = parameters_from_layer_.cols(0, parameters_from_layer_.dims(1) - 2);
 
                     switch ((*all_layer_type)[current_layer])
                     {
                     case lantern::ffn::node::NodeType::LINEAR:
                     {
-                        gradient = lantern::derivative::Linear(prev_output);
+                        gradient_ = lantern::derivative::Linear(output_);
 
                         break;
                     }
                     case lantern::ffn::node::NodeType::SIGMOID:
                     {
-                        gradient = lantern::derivative::Sigmoid(prev_output);
+                        gradient_ = lantern::derivative::Sigmoid(output_);
 
                         break;
                     }
                     case lantern::ffn::node::NodeType::RELU:
                     {
-                        // gradient = lantern::derivative::ReLU(prev_output);
+                         gradient_ = lantern::derivative::ReLU(output_);
 
                         break;
                     }
                     case lantern::ffn::node::NodeType::TANH:
                     {
-                        // gradient = lantern::derivative::TanH(prev_output);
+                        // gradient_ = lantern::derivative::TanH(output_);
 
                         break;
                     }
                     case lantern::ffn::node::NodeType::SWISH:
                     {
-                        gradient = lantern::derivative::Swish(prev_output);
+                        gradient_ = lantern::derivative::Swish(output_);
 
                         break;
                     }
                     }
 
-                    gradient *= _prev_gradient[current_layer];
-                    gradient.eval();
-                    gradient_weight = af::matmul(gradient, output.T());
+                    /*
+                    ===========================================================================
+                    Below is the visual of how this gradient_ calculate works
+                    ===========================================================================
+                                                                ┌───────────┐
+                                                                │           │
+                                                                │           │
+                                                                │           │
+                                                                │           │
+                        f(parameters * Prev_Input) = input ──▶  │   Node    | ───▶ Output
+                                                                │           │
+                                                                │           │
+                                                                │           │
+                                                                │           │
+                                                                └───────────┘
+                    ===========================================================================
+                    */
 
-                    gradient_weight.eval();
-                    gradient_bias = gradient;
+                    gradient_ *= (*prev_gradient_)[current_layer];
+                    gradient_.eval();
+                    gradient_weight_ = af::matmul(gradient_, input_.T());
 
-                    all_gradient = af::join(
+                    gradient_weight_.eval();
+                    gradient_bias_ = gradient_;
+
+                    all_gradient_ = af::join(
                         1,
-                        gradient_weight,
-                        gradient_bias
+                        gradient_weight_,
+                        gradient_bias_
                     );
 
-                    all_gradient /= batch_size;
-                    all_gradient.eval();
+                    all_gradient_ /= batch_size;
+                    all_gradient_.eval();
 
-                    uint32_t opt_index = current_layer - 1;
-                    af::array delta = _optimizer.GetDelta(all_gradient, opt_index);
-                    parameters -= delta;
-                    parameters.eval();
+                    uint32_t opt_index_ = current_layer - 1;
+                    parameters_from_layer_ -= _optimizer.GetDelta(all_gradient_, opt_index_);
+                    parameters_from_layer_.eval();
 
-                    _prev_gradient[current_layer - 1] = af::matmul(
-                        parameters(af::span, af::seq(parameters.dims(1) - 1)).T(),
-                        gradient
+                    (*prev_gradient_)[current_layer - 1] = af::matmul(
+                        parameters_from_layer_(af::span, af::seq(parameters_from_layer_.dims(1) - 1)).T(),
+                        gradient_
                     );
                 }
             }
 
-            
         }
     }
 

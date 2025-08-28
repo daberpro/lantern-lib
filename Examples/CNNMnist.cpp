@@ -64,9 +64,6 @@ int main(int argc, char* argv[])
         
                 lantern::ffn::feedforward::Initialize(
                     FFN_layer,
-                    FFN_parameters,
-                    FFN_prev_gradient,
-                    FFN_outputs,
                     FFN_adam
                 );
 
@@ -108,8 +105,8 @@ int main(int argc, char* argv[])
                     for(auto& index_data : batch_index){
     
                         input = af::array(
-                            image_dims.width,
-                            image_dims.height,
+                            image_dims.m_width,
+                            image_dims.m_height,
                             mnist_dataset.GetTrainImageAt(index_data)
                         );
                         input = input.as(f64);
@@ -124,9 +121,7 @@ int main(int argc, char* argv[])
     
                         FFN_outputs.front() = CNN_outputs->back();
                         lantern::ffn::feedforward::FeedForward(
-                            FFN_layer,
-                            FFN_outputs,
-                            FFN_parameters
+                            FFN_layer
                         );
     
                 
@@ -138,9 +133,6 @@ int main(int argc, char* argv[])
                         FFN_prev_gradient.back() = lantern::derivative::CrossEntropy(output,target);
                         lantern::ffn::backprop::Backpropagate(
                             FFN_layer,
-                            FFN_parameters,
-                            FFN_prev_gradient,
-                            FFN_outputs,
                             FFN_adam,
                             batch_size   
                         );
@@ -167,8 +159,8 @@ int main(int argc, char* argv[])
                 for (auto& index_data : batch_index) {
                     af::array& CNN_input = CNN_outputs->front();
                     CNN_input = af::array(
-                        image_dims.width,
-                        image_dims.height,
+                        image_dims.m_width,
+                        image_dims.m_height,
                         mnist_dataset.GetTrainImageAt(index_data)
                     );
                     CNN_input = CNN_input.as(f64);
@@ -179,9 +171,7 @@ int main(int argc, char* argv[])
 
                     FFN_outputs.front() = CNN_outputs->back();
                     lantern::ffn::feedforward::FeedForward(
-                        FFN_layer,
-                        FFN_outputs,
-                        FFN_parameters
+                        FFN_layer
                     );
 
                     output = lantern::probability::SoftMax(FFN_outputs.back());
@@ -191,8 +181,8 @@ int main(int argc, char* argv[])
 
                 af::array& CNN_input = CNN_outputs->front();
                 CNN_input = af::array(
-                    image_dims.width,
-                    image_dims.height,
+                    image_dims.m_width,
+                    image_dims.m_height,
                     mnist_dataset.GetTrainImageAt(0)
                 );
                 CNN_input = CNN_input.as(f64);
@@ -203,9 +193,7 @@ int main(int argc, char* argv[])
 
                 FFN_outputs.front() = CNN_outputs->back();
                 lantern::ffn::feedforward::FeedForward(
-                    FFN_layer,
-                    FFN_outputs,
-                    FFN_parameters
+                    FFN_layer
                 );
 
                 output = lantern::probability::SoftMax(FFN_outputs.back());
@@ -285,8 +273,8 @@ int main(int argc, char* argv[])
                     }
 
                     CNN_input = af::array(
-                        image_dims.width,
-                        image_dims.height,
+                        image_dims.m_width,
+                        image_dims.m_height,
                         mnist_dataset.GetImageAt(index_input)
                     );
                     CNN_input = CNN_input.as(f64);
@@ -297,9 +285,7 @@ int main(int argc, char* argv[])
 
                     FFN_outputs.front() = CNN_outputs->back();
                     lantern::ffn::feedforward::FeedForward(
-                        FFN_layer,
-                        FFN_outputs,
-                        FFN_parameters
+                        FFN_layer
                     );
 
                     output = lantern::probability::SoftMax(FFN_outputs.back());

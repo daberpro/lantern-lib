@@ -19,6 +19,9 @@ target_link_libraries(CNNMnist PRIVATE ArrayFire::afcpu hdf5_cpp-static)
 add_executable(MnistDataset MnistDataset.cpp)
 target_link_libraries(MnistDataset PRIVATE ArrayFire::afcpu)
 
+add_executable(IrisClassification IrisClassification.cpp)
+target_link_libraries(IrisClassification PRIVATE ArrayFire::afcpu)
+
 # if(COPY_DATASET)
 #     set(DATASET mnist)
 #     foreach(dataset ${DATASET})

@@ -14,7 +14,7 @@ namespace lantern {
                  * 
                  * @param learning_rate 
                  */
-                RootMeanSquaredPropagation(const double& learning_rate = 0.01f): Base(learning_rate) {}
+                RootMeanSquaredPropagation(const double& _learning_rate = 0.01f): Base(_learning_rate) {}
                 
                 /**
                  * @brief Get the Optimize result of gradient
@@ -23,17 +23,17 @@ namespace lantern {
                  * @param index 
                  * @return af::array 
                  */
-                std::pair<af::array,af::array> GetDelta(const af::array& gradient_w, const af::array& gradient_b,const uint32_t& index) override {
-                    this->w_vector_velocity[index] *= this->beta_1;
-                    this->w_vector_velocity[index] += this->learning_rate * af::pow(gradient_w, 2);
-                    this->w_vector_velocity[index].eval();
+                std::pair<af::array,af::array> GetDelta(const af::array& _gradient_w, const af::array& _gradient_b,const uint32_t& _index) override {
+                    this->m_w_vector_velocity[_index] *= this->m_beta_1;
+                    this->m_w_vector_velocity[_index] += this->m_learning_rate * af::pow(_gradient_w, 2);
+                    this->m_w_vector_velocity[_index].eval();
 
-                    this->b_vector_velocity[index] *= this->beta_1;
-                    this->b_vector_velocity[index] += this->learning_rate * af::pow(gradient_b, 2);
-                    this->b_vector_velocity[index].eval();
+                    this->m_b_vector_velocity[_index] *= this->m_beta_1;
+                    this->m_b_vector_velocity[_index] += this->m_learning_rate * af::pow(_gradient_b, 2);
+                    this->m_b_vector_velocity[_index].eval();
                     return {
-                        this->learning_rate * (gradient_w / (af::sqrt(this->w_vector_velocity[index]) + this->epsilon)),
-                        this->learning_rate * (gradient_b / (af::sqrt(this->b_vector_velocity[index]) + this->epsilon))
+                        this->m_learning_rate * (_gradient_w / (af::sqrt(this->m_w_vector_velocity[_index]) + this->m_epsilon)),
+                        this->m_learning_rate * (_gradient_b / (af::sqrt(this->m_b_vector_velocity[_index]) + this->m_epsilon))
                     };
                 }
 
@@ -44,12 +44,12 @@ namespace lantern {
                  * @param index 
                  * @return af::array 
                  */
-                af::array GetDeltaBatchNorm(const af::array& batch_norm_gradient, const uint32_t& index) override {
-                    this->batch_norm_vector_velocity[index] *= this->beta_1;
-                    this->batch_norm_vector_velocity[index] += this->learning_rate * af::pow(batch_norm_gradient, 2);
-                    this->batch_norm_vector_velocity[index].eval();
+                af::array GetDeltaBatchNorm(const af::array& _batch_norm_gradient, const uint32_t& _index) override {
+                    this->m_batch_norm_vector_velocity[_index] *= this->m_beta_1;
+                    this->m_batch_norm_vector_velocity[_index] += this->m_learning_rate * af::pow(_batch_norm_gradient, 2);
+                    this->m_batch_norm_vector_velocity[_index].eval();
 
-                    return this->learning_rate * (batch_norm_gradient / (af::sqrt(this->batch_norm_vector_velocity[index]) + this->epsilon));
+                    return this->m_learning_rate * (_batch_norm_gradient / (af::sqrt(this->m_batch_norm_vector_velocity[_index]) + this->m_epsilon));
                 }
             };
 

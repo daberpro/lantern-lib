@@ -14,7 +14,7 @@ namespace lantern {
                  * 
                  * @param learning_rate 
                  */
-                StochasticGradientDescentWithMomentum(const double& learning_rate = 0.01f): Base(learning_rate) {}
+                StochasticGradientDescentWithMomentum(const double& _learning_rate = 0.01f): Base(_learning_rate) {}
                 
                 /**
                  * @brief Get the Optimize result of gradient
@@ -23,20 +23,20 @@ namespace lantern {
                  * @param index 
                  * @return af::array 
                  */
-                std::pair<af::array,af::array> GetDelta(const af::array& gradient_w, const af::array& gradient_b,const uint32_t& index) override {
+                std::pair<af::array,af::array> GetDelta(const af::array& _gradient_w, const af::array& _gradient_b,const uint32_t& _index) override {
                     //for weights
-                    this->w_vector_velocity[index] *= this->beta_1;
-                    this->w_vector_velocity[index] += this->learning_rate * gradient_w;
-                    this->w_vector_velocity[index].eval();
+                    this->m_w_vector_velocity[_index] *= this->m_beta_1;
+                    this->m_w_vector_velocity[_index] += this->m_learning_rate * _gradient_w;
+                    this->m_w_vector_velocity[_index].eval();
 
                     // for bias
-                    this->b_vector_velocity[index] *= this->beta_1;
-                    this->b_vector_velocity[index] += this->learning_rate * gradient_b;
-                    this->b_vector_velocity[index].eval();
+                    this->m_b_vector_velocity[_index] *= this->m_beta_1;
+                    this->m_b_vector_velocity[_index] += this->m_learning_rate * _gradient_b;
+                    this->m_b_vector_velocity[_index].eval();
 
                     return {
-                        this->w_vector_velocity[index],
-                        this->b_vector_velocity[index]
+                        this->m_w_vector_velocity[_index],
+                        this->m_b_vector_velocity[_index]
                     };
                 }
 
@@ -44,16 +44,16 @@ namespace lantern {
                  * @brief Get the Optimize result of other parameters
                  * 
                  * @param batch_norm_gradient 
-                 * @param index 
+                 * @param _index 
                  * @return af::array 
                  */
-                af::array GetDeltaBatchNorm(const af::array& batch_norm_gradient, const uint32_t& index) override {
+                af::array GetDeltaBatchNorm(const af::array& _batch_norm_gradient, const uint32_t& _index) override {
                     // for other parameters
-                    this->batch_norm_vector_velocity[index] *= this->beta_1;
-                    this->batch_norm_vector_velocity[index] += this->learning_rate * batch_norm_gradient;
-                    this->batch_norm_vector_velocity[index].eval();
+                    this->m_batch_norm_vector_velocity[_index] *= this->m_beta_1;
+                    this->m_batch_norm_vector_velocity[_index] += this->m_learning_rate * _batch_norm_gradient;
+                    this->m_batch_norm_vector_velocity[_index].eval();
                     
-                    return this->batch_norm_vector_velocity[index];
+                    return this->m_batch_norm_vector_velocity[_index];
                 }
             };
 

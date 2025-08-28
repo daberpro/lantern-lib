@@ -31,8 +31,8 @@ namespace lantern {
              * @return std::string
              * @ingroup LanternNode
              */
-            inline std::string GetNodeTypeAsString(NodeType node) {
-                switch(node){
+            inline std::string GetNodeTypeAsString(NodeType _node) {
+                switch(_node){
                     case NodeType::NOTHING:     return "lantern::ffn::node::NodeType::NOTHING";
                     case NodeType::LINEAR:      return "lantern::ffn::node::NodeType::LINEAR";
                     case NodeType::SIGMOID:     return "lantern::ffn::node::NodeType::SIGMOID";
@@ -72,14 +72,14 @@ namespace nlohmann
     template <>
     struct adl_serializer<lantern::ffn::node::NodeType>
     {
-        static lantern::ffn::node::NodeType from_json(const json& j)
+        static lantern::ffn::node::NodeType from_json(const json& _j)
         {
-            return lantern::ffn::node::GetNodeTypeFromString(j);
+            return lantern::ffn::node::GetNodeTypeFromString(_j);
         }
 
-        static void to_json(json& j, const lantern::ffn::node::NodeType& node)
+        static void to_json(json& _j, const lantern::ffn::node::NodeType& _node)
         {
-            j = lantern::ffn::node::GetNodeTypeAsString(node);
+            _j = lantern::ffn::node::GetNodeTypeAsString(_node);
         }
     };
 }

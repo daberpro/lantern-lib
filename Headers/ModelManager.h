@@ -19,8 +19,8 @@ namespace lantern {
          */
         class ModelManager {
         private:
-            lantern::file::LanternHDF5 file;
-            std::unordered_map<std::string, lantern::BaseLayer*> layers;
+            lantern::file::LanternHDF5 m_file;
+            std::unordered_map<std::string, lantern::BaseLayer*> m_layers;
 
             /**
              * @brief Add meta data from layer pointer
@@ -29,17 +29,17 @@ namespace lantern {
              */
             template <typename T>
             void AddMetaData(T* _layer) {
-                std::string parent_group = this->file.GetActiveGroupNameAsString();
-                std::string group_name = parent_group, layer_metadata = parent_group + "/LAYER_METADATA";
+                std::string parent_group_ = this->m_file.GetActiveGroupNameAsString();
+                std::string group_name_ = parent_group_, layer_metadata_ = parent_group_ + "/LAYER_METADATA";
                 H5::StrType str_type_(H5::PredType::C_S1, H5T_VARIABLE);
 
-                this->file.CreateScalarDataSpace(layer_metadata);
-                this->file.CreateDataset(
+                this->m_file.CreateScalarDataSpace(layer_metadata_);
+                this->m_file.CreateDataset(
                     "Layer_Meta_Data",
-                    layer_metadata,
+                    layer_metadata_,
                     str_type_
                 );
-                this->file.WriteDataset(
+                this->m_file.WriteDataset(
                     "Layer_Meta_Data",
                     _layer->GetMetaDataAsString(),
                     str_type_
@@ -52,7 +52,7 @@ namespace lantern {
 
             ModelManager(){}
             ModelManager(const std::string& _path) {
-                this->file = lantern::file::LanternHDF5(_path);
+                this->m_file = lantern::file::LanternHDF5(_path);
             }
 
             /**
@@ -60,21 +60,21 @@ namespace lantern {
              * @param _path 
              */
             void LoadFile(const std::string& _path){
-                this->file = lantern::file::LanternHDF5(_path);
+                this->m_file = lantern::file::LanternHDF5(_path);
             }
 
             /**
              * @brief Create file if file doesnot exists and replace if already exists
              */
             void Create() {
-                this->file.Create();
+                this->m_file.Create();
             }
 
             /**
              * @brief Get all data such as datasets,groups,attributes from file
              */
             void GetAllData() {
-                this->file.GetAllData();
+                this->m_file.GetAllData();
             }
 
             /**
@@ -83,19 +83,19 @@ namespace lantern {
              * @return 
              */
             std::string GetOutFuncName(const std::string& _model_name){
-                if (this->file.CheckGroupExists(_model_name)) {
+                if (this->m_file.CheckGroupExists(_model_name)) {
 
                     H5::StrType _str_type(H5::PredType::C_S1,H5T_VARIABLE);
-                    std::string func_name;
+                    std::string func_name_;
                     
-                    this->file.ReadAttributeAtGroup(
+                    this->m_file.ReadAttributeAtGroup(
                         _model_name,
                         "OUTPUT_FUNCTION",
                         _str_type,
-                        func_name
+                        func_name_
                     );
 
-                    return func_name;
+                    return func_name_;
 
                 }else {
                     throw std::runtime_error(
@@ -112,49 +112,46 @@ namespace lantern {
              */
             void LoadParams(const std::string& _model_name, const std::string& _params_name, lantern::utility::Vector<af::array>& _params) {
 
-                if (this->file.CheckGroupExists(_model_name)) {
-                    if (this->file.CheckGroupExists(_model_name + "/Parameters")) {
+                if (this->m_file.CheckGroupExists(_model_name)) {
+                    if (this->m_file.CheckGroupExists(_model_name + "/Parameters")) {
 
-                        uint32_t total_params[1];
-                        this->file.ReadAttributeAtGroup(
+                        uint32_t total_params_[1];
+                        this->m_file.ReadAttributeAtGroup(
                             _model_name + "/Parameters",
                             _params_name + "_TOTAL",
                             H5::PredType::NATIVE_UINT32,
-                            total_params
+                            total_params_
                         );
 
 
-                        for (uint32_t i = 0; i < total_params[0]; i++) {
-                            if (this->file.CheckDataSetExists(_model_name + "/Parameters/" + _params_name + "_" + std::to_string(i))) {
-                                auto dims = this->file.GetDatasetDims(
+                        for (uint32_t i = 0; i < total_params_[0]; i++) {
+                            if (this->m_file.CheckDataSetExists(_model_name + "/Parameters/" + _params_name + "_" + std::to_string(i))) {
+                                auto dims_ = this->m_file.GetDatasetDims(
                                     _model_name + "/Parameters/" + _params_name + "_" + std::to_string(i)
                                 );
                                 
-                                af::dim4 af_dims(1,1,1,1);
-                                uint32_t total_elements = 1;
-                                for (uint32_t i = 0; i < dims.size(); i++) {
-                                    af_dims[i] = dims[i];
-                                    total_elements *= dims[i];
+                                af::dim4 af_dims_(1,1,1,1);
+                                uint32_t total_elements_ = 1;
+                                for (uint32_t i = 0; i < dims_.size(); i++) {
+                                    af_dims_[i] = dims_[i];
+                                    total_elements_ *= dims_[i];
                                 }
                                 
-                                lantern::utility::Vector<double> temp_container(total_elements);
-                                this->file.ReadDataset(
+                                lantern::utility::Vector<double> temp_container_(total_elements_);
+                                this->m_file.ReadDataset(
                                     _model_name + "/Parameters/" + _params_name + "_" + std::to_string(i),
-                                    temp_container.getData(),
+                                    temp_container_.data(),
                                     H5::PredType::NATIVE_DOUBLE
                                 );
 
                                 _params.push_back(
                                     af::array(
-                                        af_dims,
-                                        temp_container.getData()
+                                        af_dims_,
+                                        temp_container_.data()
                                     )
                                 );
                             }
                             else {
-                                for (auto& [key, value] : (*this->file.GetDatasetsPtr())) {
-                                    std::println("{}", key);
-                                }
                                 throw std::runtime_error(
                                     std::format("Error ModelManager, \"{}\" uknown params!\n", _model_name)
                                 );
@@ -187,41 +184,41 @@ namespace lantern {
             template <typename T = lantern::BaseLayer>
             void LoadModel(const std::string& _model_name, T* _layer) {
                 // get all groups first
-                std::string raw_layer_meta_data;
+                std::string raw_layer_meta_data_;
                 H5::StrType _str_type(H5::PredType::C_S1,H5T_VARIABLE);
                 
-                if (this->file.CheckGroupExists(_model_name)) {
-                    if (this->file.CheckDataSetExists(_model_name+"/Layer_Meta_Data")) {
+                if (this->m_file.CheckGroupExists(_model_name)) {
+                    if (this->m_file.CheckDataSetExists(_model_name+"/Layer_Meta_Data")) {
                             
-                        this->file.ReadDataset(_model_name + "/Layer_Meta_Data", raw_layer_meta_data, _str_type);
-                        nlohmann::json layer_meta_data = nlohmann::json::parse(raw_layer_meta_data);
+                        this->m_file.ReadDataset(_model_name + "/Layer_Meta_Data", raw_layer_meta_data_, _str_type);
+                        nlohmann::json layer_meta_data_ = nlohmann::json::parse(raw_layer_meta_data_);
 
                         if constexpr (std::is_same_v<T, lantern::cnn::layer::Layer>) {
 
-                            lantern::cnn::layer::Layer& CNN_layer = (*_layer);
+                            lantern::cnn::layer::Layer& CNN_layer_ = (*_layer);
 
-                            auto& convolves_info = (*CNN_layer.GetAllConvolveLayerInfo());
-                            auto& layer_sizes = (*CNN_layer.GetAllLayerSizes());
-                            auto& poolings_info = (*CNN_layer.GetAllPoolingLayerInfo());
-                            auto& node_types = (*CNN_layer.GetAllNodeTypeOfLayer());
-                            auto& input_size = (*CNN_layer.GetInputSize());
+                            auto& convolves_info_ = (*CNN_layer_.GetAllConvolveLayerInfo());
+                            auto& layer_sizes_ = (*CNN_layer_.GetAllLayerSizes());
+                            auto& poolings_info_ = (*CNN_layer_.GetAllPoolingLayerInfo());
+                            auto& node_types_ = (*CNN_layer_.GetAllNodeTypeOfLayer());
+                            auto& input_size_ = (*CNN_layer_.GetInputSize());
 
-                            convolves_info = layer_meta_data["convolve_layer_info"].get<lantern::utility::Vector<lantern::cnn::layer::ConvolveLayerInfo>>();
-                            poolings_info = layer_meta_data["pooling_layer_info"].get<lantern::utility::Vector<lantern::cnn::layer::PoolingLayerInfo>>();
-                            layer_sizes = layer_meta_data["layer_size"].get<lantern::utility::Vector<uint32_t>>();
-                            node_types = layer_meta_data["node_type_of_layer"].get<lantern::utility::Vector<lantern::cnn::node::NodeType>>();
-                            input_size = layer_meta_data["input_size"].get<lantern::utility::Vector<uint32_t>>();
+                            convolves_info_ = layer_meta_data_["convolve_layer_info"].get<lantern::utility::Vector<lantern::cnn::layer::ConvolveLayerInfo>>();
+                            poolings_info_ = layer_meta_data_["pooling_layer_info"].get<lantern::utility::Vector<lantern::cnn::layer::PoolingLayerInfo>>();
+                            layer_sizes_ = layer_meta_data_["layer_size"].get<lantern::utility::Vector<uint32_t>>();
+                            node_types_ = layer_meta_data_["node_type_of_layer"].get<lantern::utility::Vector<lantern::cnn::node::NodeType>>();
+                            input_size_ = layer_meta_data_["input_size"].get<lantern::utility::Vector<uint32_t>>();
                         }
 
                         if constexpr (std::is_same_v<T, lantern::ffn::layer::Layer>) {
 
-                            lantern::ffn::layer::Layer& FFN_layer = (*_layer);
+                            lantern::ffn::layer::Layer& FFN_layer_ = (*_layer);
 
-                            auto& all_sizes = (*FFN_layer.GetAllLayerSizes());
-                            auto& node_types = (*FFN_layer.GetAllNodeTypeOfLayer());
+                            auto& all_sizes_ = (*FFN_layer_.GetAllLayerSizes());
+                            auto& node_types_ = (*FFN_layer_.GetAllNodeTypeOfLayer());
 
-                            node_types = layer_meta_data["node_type_of_layer"].get<lantern::utility::Vector<lantern::ffn::node::NodeType>>();
-                            all_sizes = layer_meta_data["layer_size"].get<lantern::utility::Vector<uint32_t>>();
+                            node_types_ = layer_meta_data_["node_type_of_layer"].get<lantern::utility::Vector<lantern::ffn::node::NodeType>>();
+                            all_sizes_ = layer_meta_data_["layer_size"].get<lantern::utility::Vector<uint32_t>>();
                         }
                     }
                     else {
@@ -240,23 +237,23 @@ namespace lantern {
              * @brief Set out function name to file
              * @param OutFuncName 
              */
-            void SetOutFunctionName(const std::string& OutFuncName) {
-                std::string parent_group = this->file.GetActiveGroupNameAsString();
-                std::string group_name = parent_group, attr_name = parent_group + "/OUTPUT_FUNCTION";
+            void SetOutFunctionName(const std::string& _OutFuncName) {
+                std::string parent_group_ = this->m_file.GetActiveGroupNameAsString();
+                std::string group_name_ = parent_group_, attr_name_ = parent_group_ + "/OUTPUT_FUNCTION";
                 H5::StrType str_type_(H5::PredType::C_S1, H5T_VARIABLE);
 
-                this->file.CreateScalarDataSpace(attr_name);
-                this->file.CreateAttributeAtGroup(
-                    group_name,
-                    attr_name,
+                this->m_file.CreateScalarDataSpace(attr_name_);
+                this->m_file.CreateAttributeAtGroup(
+                    group_name_,
+                    attr_name_,
                     "OUTPUT_FUNCTION",
                     str_type_
                 );
-                this->file.WriteAttributeAtGroup(
-                    group_name,
+                this->m_file.WriteAttributeAtGroup(
+                    group_name_,
                     "OUTPUT_FUNCTION",
                     str_type_,
-                    OutFuncName
+                    _OutFuncName
                 );
             }
 
@@ -266,15 +263,15 @@ namespace lantern {
             */
             template <typename T>
             void AddModel(const std::string& _model_name, T* _layer) {
-                this->file.CreateGroup(_model_name);
-                this->layers.insert({_model_name,_layer});
+                this->m_file.CreateGroup(_model_name);
+                this->m_layers.insert({_model_name,_layer});
             }
 
             /*
             * @brief Select model to get affected by all current operation after selected
             */
             void SelectModelToModify(const std::string& _model_name) {
-                this->file.SetActiveGroup(_model_name);
+                this->m_file.SetActiveGroup(_model_name);
             }
             
             /*
@@ -284,131 +281,130 @@ namespace lantern {
             */
             void AddParams(const std::string& _params_name,lantern::utility::Vector<af::array>& _params){
                 
-                std::string parent_group = this->file.GetActiveGroupNameAsString();
-                lantern::BaseLayer* model_layer = this->layers.at(parent_group);
+                std::string parent_group_ = this->m_file.GetActiveGroupNameAsString();
+                lantern::BaseLayer* model_layer_ = this->m_layers.at(parent_group_);
 
                 // create group params if not exists
-                if (!this->file.CheckGroupExists(parent_group + "/Parameters")){
-                    this->file.CreateGroup(parent_group + "/Parameters");
+                if (!this->m_file.CheckGroupExists(parent_group_ + "/Parameters")){
+                    this->m_file.CreateGroup(parent_group_ + "/Parameters");
                 }
 
-                this->file.SetActiveGroup(parent_group+"/Parameters");
-                uint32_t rank = 1;
-                std::string params_names;
+                this->m_file.SetActiveGroup(parent_group_+"/Parameters");
+                uint32_t rank_ = 1;
+                std::string params_names_;
                 std::string output_node_type_;
-                double* data = nullptr;
+                double* data_ = nullptr;
                 H5::StrType str_type_(H5::PredType::C_S1, H5T_VARIABLE);
 
                 // add attribute to know total params
-                this->file.CreateDataSpace<1>(parent_group + "/Parameters" + _params_name + "_TOTAL", { 1 });
-                this->file.CreateAttributeAtGroup(
-                    parent_group + "/Parameters",
-                    parent_group + "/Parameters" + _params_name + "_TOTAL",
+                this->m_file.CreateDataSpace<1>(parent_group_ + "/Parameters" + _params_name + "_TOTAL", { 1 });
+                this->m_file.CreateAttributeAtGroup(
+                    parent_group_ + "/Parameters",
+                    parent_group_ + "/Parameters" + _params_name + "_TOTAL",
                     _params_name + "_TOTAL",
                     H5::PredType::NATIVE_UINT32
                 );
-                uint32_t total_param[] = { _params.size() };
-                this->file.WriteAttributeAtGroup(
-                    parent_group + "/Parameters",
+                uint32_t total_param_[] = { _params.size() };
+                this->m_file.WriteAttributeAtGroup(
+                    parent_group_ + "/Parameters",
                     _params_name + "_TOTAL",
                     H5::PredType::NATIVE_UINT32,
-                    total_param
+                    total_param_
                 );
 
                 // check if the layer was cnn or ffn
-                if (typeid(*model_layer) == typeid(lantern::cnn::layer::Layer)) {
-                    auto* layer = reinterpret_cast<lantern::cnn::layer::Layer*>(model_layer);
-                    auto* all_node_types = layer->GetAllNodeTypeOfLayer();
+                if (typeid(*model_layer_) == typeid(lantern::cnn::layer::Layer)) {
+                    auto* layer_ = reinterpret_cast<lantern::cnn::layer::Layer*>(model_layer_);
+                    auto* all_node_types_ = layer_->GetAllNodeTypeOfLayer();
 
-                    if (_params.size() != layer->GetAllConvolveLayerInfo()->size()) {
+                    if (_params.size() != layer_->GetAllConvolveLayerInfo()->size()) {
                         throw std::runtime_error("Error cannot add params, total node in layer lantern::cnn::layer::Layer are miss match with parameters");
                     }
 
                     for (uint32_t index_of_data = 0; index_of_data < _params.size(); index_of_data++) {
-                        params_names = _params_name + "_" + std::to_string(index_of_data);
+                        params_names_ = _params_name + "_" + std::to_string(index_of_data);
                         output_node_type_ = "OUTPUT_FUNCTION_SPACE_"+ _params_name + "_" + std::to_string(index_of_data);
-                        af::array& param = _params[index_of_data];
-                        rank = param.numdims();
+                        af::array& param_ = _params[index_of_data];
+                        rank_ = param_.numdims();
 
-                        data = param.host<double>();
+                        data_ = param_.host<double>();
 
-                        this->file.CreateDataSpace(params_names, rank, {
-                            static_cast<uint64_t>(param.dims(0)),
-                            static_cast<uint64_t>(param.dims(1)),
-                            static_cast<uint64_t>(param.dims(2)),
-                            static_cast<uint64_t>(param.dims(3))
+                        this->m_file.CreateDataSpace(params_names_, rank_, {
+                            static_cast<uint64_t>(param_.dims(0)),
+                            static_cast<uint64_t>(param_.dims(1)),
+                            static_cast<uint64_t>(param_.dims(2)),
+                            static_cast<uint64_t>(param_.dims(3))
                         });
-                        this->file.CreateDataset(
-                            params_names,
-                            params_names,
+                        this->m_file.CreateDataset(
+                            params_names_,
+                            params_names_,
                             H5::PredType::NATIVE_DOUBLE
                         );
-                        this->file.WriteDataset(
-                            params_names,
-                            data,
+                        this->m_file.WriteDataset(
+                            params_names_,
+                            data_,
                             H5::PredType::NATIVE_DOUBLE
                         );
 
                        
-                        af::freeHost(data);
+                        af::freeHost(data_);
                     }
 
-                    if (!this->file.CheckDataSetExists(parent_group+"/Layer_Meta_Data")) {
-                        this->file.SetActiveGroup(parent_group);
+                    if (!this->m_file.CheckDataSetExists(parent_group_+"/Layer_Meta_Data")) {
+                        this->m_file.SetActiveGroup(parent_group_);
                         this->AddMetaData(
-                            layer
+                            layer_
                         );
                     }
                     
                 }
 
                 // check if the layer was cnn or ffn
-                if (typeid(*model_layer) == typeid(lantern::ffn::layer::Layer)) {
-                    auto* layer = reinterpret_cast<lantern::ffn::layer::Layer*>(model_layer);
-                    auto* all_node_types = layer->GetAllNodeTypeOfLayer();
+                if (typeid(*model_layer_) == typeid(lantern::ffn::layer::Layer)) {
+                    auto* layer_ = reinterpret_cast<lantern::ffn::layer::Layer*>(model_layer_);
+                    auto* all_node_types_ = layer_->GetAllNodeTypeOfLayer();
 
-                    if (_params.size() != layer->GetAllLayerSizes()->size() - 1) {
+                    if (_params.size() != layer_->GetAllLayerSizes()->size() - 1) {
                         throw std::runtime_error("Error cannot add params, total node in layer lantern::ffn::layer::Layer are miss match with parameters");
                     }
                     
                     for (uint32_t index_of_data = 0; index_of_data < _params.size(); index_of_data++) {
-                        params_names = _params_name + "_" + std::to_string(index_of_data);
+                        params_names_ = _params_name + "_" + std::to_string(index_of_data);
                         output_node_type_ = "OUTPUT_FUNCTION_SPACE_" + _params_name + "_" + std::to_string(index_of_data);
-                        af::array& param = _params[index_of_data];
-                        rank = param.numdims();
+                        af::array& param_ = _params[index_of_data];
+                        rank_ = param_.numdims();
+                        data_ = param_.host<double>();
 
-                        data = param.host<double>();
-
-                        this->file.CreateDataSpace(params_names, rank, {
-                            static_cast<uint64_t>(param.dims(0)),
-                            static_cast<uint64_t>(param.dims(1)),
-                            static_cast<uint64_t>(param.dims(2)),
-                            static_cast<uint64_t>(param.dims(3))
+                        this->m_file.CreateDataSpace(params_names_, rank_, {
+                            static_cast<uint64_t>(param_.dims(0)),
+                            static_cast<uint64_t>(param_.dims(1)),
+                            static_cast<uint64_t>(param_.dims(2)),
+                            static_cast<uint64_t>(param_.dims(3))
                         });
-                        this->file.CreateDataset(
-                            params_names,
-                            params_names,
+                        this->m_file.CreateDataset(
+                            params_names_,
+                            params_names_,
                             H5::PredType::NATIVE_DOUBLE
                         );
-                        this->file.WriteDataset(
-                            params_names,
-                            data,
+                        this->m_file.WriteDataset(
+                            params_names_,
+                            data_,
                             H5::PredType::NATIVE_DOUBLE
                         );
 
                        
-                        af::freeHost(data);
+                        af::freeHost(data_);
                     }
-                    if (!this->file.CheckDataSetExists(parent_group + "/Layer_Meta_Data")) {
+                    if (!this->m_file.CheckDataSetExists(parent_group_ + "/Layer_Meta_Data")) {
                         
-                        this->file.SetActiveGroup(parent_group);
+                        this->m_file.SetActiveGroup(parent_group_);
                         this->AddMetaData(
-                            layer
+                            layer_
                         );
                     }
                 }
 
-                this->file.SetActiveGroup(parent_group);
+                this->m_file.SetActiveGroup(parent_group_);
                 
             }
 

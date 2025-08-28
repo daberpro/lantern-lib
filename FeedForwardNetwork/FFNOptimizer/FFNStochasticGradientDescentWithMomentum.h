@@ -17,21 +17,21 @@ namespace lantern
                  * @param learning_rate
                  * @param beta
                  */
-                StochasticGradientDescentWithMomentum(double learning_rate = 0.01, double beta_1 = 0.9) : Base(learning_rate,beta_1) {}
+                StochasticGradientDescentWithMomentum(const double& _learning_rate = 0.01, const double& _beta_1 = 0.9) : Base(_learning_rate,_beta_1) {}
                 
                 /**
-                 * @brief Get the Optimize result of gradient
+                 * @brief Get the Optimize result of _gradient
                  *
-                 * @param gradient
-                 * @param index
+                 * @param _gradient
+                 * @param _index
                  * @return af::array
                  */
-                af::array GetDelta(af::array &gradient, uint32_t &index)
+                af::array GetDelta(const af::array& _gradient, const uint32_t& _index)
                 {
-                    this->vector_velocity[index] *= this->beta_1;
-                    this->vector_velocity[index] += this->learning_rate * gradient;
-                    this->vector_velocity[index].eval();
-                    return this->vector_velocity[index];
+                    this->m_vector_velocity[_index] *= this->m_beta_1;
+                    this->m_vector_velocity[_index] += this->m_learning_rate * _gradient;
+                    this->m_vector_velocity[_index].eval();
+                    return this->m_vector_velocity[_index];
                 }
             };
     

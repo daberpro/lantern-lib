@@ -17,20 +17,20 @@ namespace lantern
                  * @param learning_rate
                  * @param epsilon
                  */
-                AdaptiveGradientDescent(double learning_rate = 0.01, double epsilon = 1e-08) : Base(learning_rate, 0.9, 0.999, epsilon) {}
+                AdaptiveGradientDescent(const double& _learning_rate = 0.01, const double& _epsilon = 1e-08) : Base(_learning_rate, 0.9, 0.999, _epsilon) {}
                 
                 /**
                  * @brief Get the Optimize result of gradient
                  *
                  * @param gradient
-                 * @param index
+                 * @param _index
                  * @return af::array
                  */
-                af::array GetDelta(af::array &gradient, uint32_t &index) override
+                af::array GetDelta(const af::array& _gradient, const uint32_t& _index) override
                 {
-                    this->stack_previous_gradient[index] += af::pow(gradient, 2);
-                    this->stack_previous_gradient[index].eval();
-                    return (this->learning_rate / (af::sqrt(this->stack_previous_gradient[index]) + this->epsilon)) * gradient;
+                    this->m_stack_previous_gradient[_index] += af::pow(_gradient, 2);
+                    this->m_stack_previous_gradient[_index].eval();
+                    return (this->m_learning_rate / (af::sqrt(this->m_stack_previous_gradient[_index]) + this->m_epsilon)) * _gradient;
                 }
             };
     

@@ -13,7 +13,7 @@ namespace lantern {
                  * 
                  * @param learning_rate 
                  */
-                GradientDescent(double learning_rate = 0.01f): Base(learning_rate) {}
+                GradientDescent(const double& _learning_rate = 0.01f): Base(_learning_rate) {}
                 
                 /**
                  * @brief Get the Optimize result of gradient
@@ -22,8 +22,8 @@ namespace lantern {
                  * @param index 
                  * @return af::array 
                  */
-                af::array GetDelta(af::array& gradient, uint32_t& index) override {
-                    return this->learning_rate * gradient;
+                af::array GetDelta(const af::array& _gradient, const uint32_t& _index) override {
+                    return this->m_learning_rate * _gradient;
                 }
             };
         }
